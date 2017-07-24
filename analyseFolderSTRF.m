@@ -9,7 +9,7 @@ global COCHBA ;
 load aud24; % load cochlear filter coefficients
 
 % initialize sound path
-soundPath = './sounds/' ;
+soundPath = '../sounds/' ;
 ext = 'aiff' ;
 addpath(soundPath) ;
 soundsList = dir(strcat(soundPath, '*.',ext)) ;
@@ -69,6 +69,6 @@ end
 
 %% compute correlation between perceptual results and computed distances
 arrayMAT = treshape(tril(MAT, -1)',3) ;
-[r_eucl, p_eucl] = corr(meanMatDis,arrayMAT_EUCL,'type','pearson') 
+[r_eucl, p_eucl] = corr(meanMatDis,arrayMAT,'type','pearson')  
 
 
