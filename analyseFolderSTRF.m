@@ -3,7 +3,7 @@ clc ;
 
 % load NSL Toolbox functions (http://www.isr.umd.edu/Labs/NSL/Software.htm)
 addpath(genpath('./NSLfunctions/')); 
-
+addpath('../func/') ;
 clear COCHBA ;
 global COCHBA ; 
 load aud24; % load cochlear filter coefficients
@@ -52,7 +52,7 @@ meanMatDis = treshape(matDis,3) ; % up triangle of the dissimilarity matrix
 
 MAT = zeros(nbSounds,nbSounds) ;
 
-%% pca + distance (à compléter modifier corriger avec l'optimisation)
+%% pca 
 nbFreq = 128; % number of frequencies
 tab_red = [] ;
 for i = 1:nbSounds
@@ -60,29 +60,21 @@ for i = 1:nbSounds
     redDim1 = PCA_STRF(abs(STRFTab{i}),nbFreq) ;    
     redDim1 = redDim1 / max(redDim1(:)) ;
     tab_red = [tab_red redDim1(:)] ;
-    for j = 1:nbSounds
-         redDim2 = PCA_STRF(abs(STRFTab{j}),nbFreq) ;   
-         redDim2 = redDim2 / max(redDim2(:)) ;
-         
-         MAT(i,j) = sqrt(sum((redDim1(:)-redDim2(:)).^2)) ;
-    end
 end
 
-%% compute correlation between perceptual results and computed distances
-arrayMAT = treshape(tril(MAT, -1)',3) ;
-[r_eucl, p_eucl] = corr(meanMatDis,arrayMAT,'type','pearson')  ;
 
-%%
-sigma = ones(length(redDim1(:)),1) ;
+
+%% gradient descent
+sigma = randn(length(redDim1(:)),1)+200 ;
 grad = zeros(length(redDim1(:)),1) ;
 MAT2 = zeros(nbSounds,nbSounds) ;
-
-for iOptim = 1:1000
-    iOptim;
-    sigma = sigma + grad ;
+r_eucl = zeros(1,1) ;
+for iOptim = 1:1000000
+    iOptim
+    sigma = sigma - grad .* sigma ;
     grad = gradient_new(tab_red, matDis + matDis', sigma) ;
 
-% distance optimisée
+% distance
 for i = 1:nbSounds
     i;
     for j = 1:nbSounds
@@ -90,8 +82,11 @@ for i = 1:nbSounds
     end
 end
 
+% correlation with perceptual results
 arrayMAT2 = treshape(tril(MAT2, -1)',3) ;
-[r_eucl, p_eucl] = corr(meanMatDis,arrayMAT2,'type','pearson')  ;
-r_eucl
+[r_eucl(iOptim), p_eucl] = corr(meanMatDis,arrayMAT2,'type','pearson')  ;
+
+% plot(r_eucl)
+% drawnow;
 
 end
