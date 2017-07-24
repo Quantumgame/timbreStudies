@@ -54,11 +54,12 @@ MAT = zeros(nbSounds,nbSounds) ;
 
 %% pca + distance (à compléter modifier corriger avec l'optimisation)
 nbFreq = 128; % number of frequencies
-
+tab_red = [] ;
 for i = 1:nbSounds
     i
     redDim1 = PCA_STRF(abs(STRFTab{i}),nbFreq) ;    
     redDim1 = redDim1 / max(redDim1(:)) ;
+    tab_red = [tab_red redDim1(:)] ;
     for j = 1:nbSounds
          redDim2 = PCA_STRF(abs(STRFTab{j}),nbFreq) ;   
          redDim2 = redDim2 / max(redDim2(:)) ;
@@ -69,6 +70,28 @@ end
 
 %% compute correlation between perceptual results and computed distances
 arrayMAT = treshape(tril(MAT, -1)',3) ;
-[r_eucl, p_eucl] = corr(meanMatDis,arrayMAT,'type','pearson')  
+[r_eucl, p_eucl] = corr(meanMatDis,arrayMAT,'type','pearson')  ;
 
+%%
+sigma = ones(length(redDim1(:)),1) ;
+grad = zeros(length(redDim1(:)),1) ;
+MAT2 = zeros(nbSounds,nbSounds) ;
 
+for iOptim = 1:1000
+    iOptim;
+    sigma = sigma + grad ;
+    grad = gradient_new(tab_red, matDis + matDis', sigma) ;
+
+% distance optimisée
+for i = 1:nbSounds
+    i;
+    for j = 1:nbSounds
+         MAT2(i,j) = gk(tab_red(:,i),tab_red(:,j),sigma) ;
+    end
+end
+
+arrayMAT2 = treshape(tril(MAT2, -1)',3) ;
+[r_eucl, p_eucl] = corr(meanMatDis,arrayMAT2,'type','pearson')  ;
+r_eucl
+
+end
