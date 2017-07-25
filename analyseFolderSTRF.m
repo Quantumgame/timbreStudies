@@ -65,10 +65,11 @@ end
 
 
 %% gradient descent
-sigma = randn(length(redDim1(:)),1)+200 ;
-grad = zeros(length(redDim1(:)),1) ;
-MAT2 = zeros(nbSounds,nbSounds) ;
+sigma = -rand(length(redDim1(:)),1) * 1000 + 1 ;
+grad  = zeros(length(redDim1(:)),1) ;
+MAT2  = zeros(nbSounds,nbSounds) ;
 r_eucl = zeros(1,1) ;
+
 for iOptim = 1:1000000
     iOptim
     sigma = sigma - grad .* sigma ;
@@ -86,7 +87,7 @@ end
 arrayMAT2 = treshape(tril(MAT2, -1)',3) ;
 [r_eucl(iOptim), p_eucl] = corr(meanMatDis,arrayMAT2,'type','pearson')  ;
 
-% plot(r_eucl)
-% drawnow;
+scatter(arrayMAT2,meanMatDis)
+drawnow;
 
 end
