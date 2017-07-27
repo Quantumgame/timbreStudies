@@ -3,13 +3,13 @@ clc ;
 
 % load NSL Toolbox functions (http://www.isr.umd.edu/Labs/NSL/Software.htm)
 addpath(genpath('./NSLfunctions/')); 
-addpath('../func/') ;
+addpath('./ext/func/') ;
 clear COCHBA ;
 global COCHBA ; 
 load aud24; % load cochlear filter coefficients
 
 % initialize sound path
-soundPath = '../sounds/' ;
+soundPath = './ext/sounds/' ;
 ext = 'aiff' ;
 addpath(soundPath) ;
 soundsList = dir(strcat(soundPath, '*.',ext)) ;
@@ -56,37 +56,22 @@ MAT = zeros(nbSounds,nbSounds) ;
 nbFreq = 128; % number of frequencies
 tab_red = [] ;
 for i = 1:nbSounds
-    i
+    fprintf('PCA on sound %02i\n',i);
     redDim1 = PCA_STRF(abs(STRFTab{i}),nbFreq) ;    
     redDim1 = redDim1 / max(redDim1(:)) ;
     tab_red = [tab_red redDim1(:)] ;
 end
 
 
+%% optimization
+grad_direction = -1; % ascent (descent: -1)
+[sigmas, kernel, correlations] = kernel_optim(tab_red, matDis, grad_direction);
 
-%% gradient descent
-sigma = randn(length(redDim1(:)),1)+200 ;
-grad = zeros(length(redDim1(:)),1) ;
-MAT2 = zeros(nbSounds,nbSounds) ;
-r_eucl = zeros(1,1) ;
-for iOptim = 1:1000000
-    iOptim
-    sigma = sigma - grad .* sigma ;
-    grad = gradient_new(tab_red, matDis + matDis', sigma) ;
-
-% distance
-for i = 1:nbSounds
-    i;
-    for j = 1:nbSounds
-         MAT2(i,j) = gk(tab_red(:,i),tab_red(:,j),sigma) ;
-    end
-end
-
-% correlation with perceptual results
-arrayMAT2 = treshape(tril(MAT2, -1)',3) ;
-[r_eucl(iOptim), p_eucl] = corr(meanMatDis,arrayMAT2,'type','pearson')  ;
-
-% plot(r_eucl)
-% drawnow;
-
-end
+subplot(1,2,1)
+plot(correlations)
+subplot(1,2,2)
+hold on;
+plot(meanMatDis./std(meanMatDis),'k')
+plot(kernel./std(kernel),'-r')
+hold off;
+drawnow;
