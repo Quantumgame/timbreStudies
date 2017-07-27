@@ -75,3 +75,4 @@ plot(meanMatDis./std(meanMatDis),'k')
 plot(kernel./std(kernel),'-r')
 hold off;
 drawnow;
+
