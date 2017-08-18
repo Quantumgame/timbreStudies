@@ -61,7 +61,11 @@ for i = 1:nbSounds
     redDim1 = redDim1 / max(redDim1(:)) ;
     tab_red = [tab_red redDim1(:)] ;
 end
-
+%%
+%tab_red = zeros(prod(size(STRFTab{1})),nbSounds);
+%for iFile = 1:nbSounds
+%    tab_red(:,iFile) = STRFTab{iFile}(:);
+%end
 
 %% optimization
 grad_direction = -1; % ascent (descent: -1)

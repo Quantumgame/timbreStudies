@@ -25,7 +25,6 @@ mean_target = mean(target_v);
 std_target = std(target_v);
 
 for loop = 1:num_loops
-    
     sigmas = sigmas + direction * grad_corrfunc .* sigmas ;
 
     for i=1:ninstrus
@@ -55,5 +54,6 @@ for loop = 1:num_loops
     if(mod(loop,100)==0)
         fprintf('loop=%d | grad=%.6f | J=%.6f\n', loop, norm(grad_corrfunc,2), correlations(loop));
     end
+
 end
 
