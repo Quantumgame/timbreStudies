@@ -11,8 +11,8 @@ def kernel_optim(input_data, target_data, cost='correlation', num_loops=20000):
 
     correlations = np.zeros((num_loops, 1))
 
-    idx_triu = np.triu_indices(target.shape[0], k=1)
-    target_v = target[idx_triu]
+    idx_triu = np.triu_indices(target_data.shape[0], k=1)
+    target_v = target_data[idx_triu]
     mean_target = np.mean(target_v)
     std_target = np.std(target_v)
 
