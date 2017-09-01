@@ -20,7 +20,7 @@ function corticalRepresentation = STRFmodelWithCut(filename,scalesVector,ratesVe
       wavtemp = resample(wavtemp, fs, fs_wav) ; % resample to 8000 Hz 
 
     %% Peripheral auditory model (from NSL toolbox)
-
+    dlmwrite('wavtemp.txt', wavtemp, 'precision',16)
     % compute spectrogram with wav2aud (from NSL toolbox), first f0 = 180 Hz
     nbChannels = 128 ;              % nb channels (128 ch. in the NSL toolbox)
     nbChOct = 24 ;                  % nb channels per octaves (24 ch/oct in the NSL toolbox)
@@ -37,7 +37,7 @@ function corticalRepresentation = STRFmodelWithCut(filename,scalesVector,ratesVe
     % stft = stft_mod ;
 
     [stft] = wav2aud(wavtemp', [frameLength timeConstant  compressionfactor octaveShift]) ;
-
+    
 
 %     times     = linspace(0, length(stft(:,1)) / sr_time, length(stft(:,1))) ;
 %     channels  = linspace(0, nbChannels, length(stft(1 , :))) ;
@@ -50,13 +50,18 @@ function corticalRepresentation = STRFmodelWithCut(filename,scalesVector,ratesVe
 
     nfft_scale = nfft_fac * 2^nextpow2(length(stft(1,:))) ;
     [modulationScale, phaseScale] = spec2scaletime(stft, nbChannels, nbChOct, sr_time, nfft_scale) ;
-
+    
+    
     % 2) Scales vs. Time => Scales vs. Rates
 
     nfft_rate = nfft_fac * 2^nextpow2(length(modulationScale(:,1))) ;
     [scaleRate, phaseScaleRate] = scaletime2scalerate(modulationScale .* exp(1i * phaseScale), nbChannels, nbChOct, sr_time, nfft_rate, nfft_scale) ;
-
+    
+    
     [corticalRepresentation] = scaleRate2cortical(scaleRate, phaseScaleRate, stft, scalesVector, ratesVector, nbChOct, sr_time, nfft_scale, nfft_rate, 2) ;
+    corticalRepresentation(2,:,10,10)
+    %size(corticalRepresentation)
+    %plot(corticalRepresentation(2,:,10,10))
       else     
           corticalRepresentation = [] ;
       end

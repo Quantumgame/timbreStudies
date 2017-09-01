@@ -43,15 +43,15 @@ corticalRepresentation = zeros(length(stft(:,1)), length(stft(1,:)), LgtScaleVec
 
         t = (0 : nfft_rate/2 - 1)' / sr_time * abs(fc_rate) ;
         h = sin(2 * pi * t) .* t.^2 .* exp(-3.5 * t) * abs(fc_rate) ; % same shape as in Chi et al. (2005)      
-        h  = h - mean(h) ; 
+        h  = h - mean(h) ;
         
         
         STRF_rate0 = fft(h,  nfft_rate) ;
-        A          = angle(STRF_rate0(1 : nfft_rate/2)) ; % 
+        A          = angle(STRF_rate0(1 : nfft_rate/2));  % 
         STRF_rate  = abs(STRF_rate0(1 : nfft_rate/2)) ;   % 
         STRF_rate  = STRF_rate / max(STRF_rate) ;
         STRF_rate  = STRF_rate .* exp(1i * A) ;
-
+        
         
         % rate filtering modification                     
         STRF_rate                = [STRF_rate(1:nfft_rate/2); zeros(1,nfft_rate/2)'] ;
@@ -66,8 +66,10 @@ corticalRepresentation = zeros(length(stft(:,1)), length(stft(1,:)), LgtScaleVec
         for m = 1 : nfft_scale / 2
             z1(:, m) = STRF_rate .* scaleRate(:,m) .* exp(1i * phaseScaleRate(:, m));
         end
- 
+        
         z1 = ifft(z1(1:nfft_rate,:));
+        
+        %z1(5,10)
         %figure;imagesc(abs(z1));pause
         
         % scale filtering
@@ -75,7 +77,6 @@ corticalRepresentation = zeros(length(stft(:,1)), length(stft(1,:)), LgtScaleVec
             
             fc_scale = scalesVector(i) ;
 %             disp(num2str(fc_scale)) ;
-            
             R1	= (0 : nfft_scale/2 - 1)'/ (nfft_scale/2) * nbChOct/2 / abs(fc_scale) ;	% length = L + 1 for now
 
             if KIND == 1	

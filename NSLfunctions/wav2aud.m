@@ -80,6 +80,7 @@ else global COCHBA; end;
 [~, M] = size(COCHBA);	% p_max = L - 2;
 L_x = length(x);	% length of input
 
+
 % octave shift, nonlinear factor, frame length, leaky integration
 shft	= paras(4);			% octave shift
 fac	= paras(3);			% nonlinear factor
@@ -107,9 +108,16 @@ v5 = zeros(N, M-1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 p	= real(COCHBA(1, M));
 B	= real(COCHBA((0:p)+2, M));
-A	= imag(COCHBA((0:p)+2, M)); 
+A	= imag(COCHBA((0:p)+2, M));
+for i=1:length(B)
+    fprintf('%.16f %.16f\n',A(i),B(i));
+end
 y1	= filter(B, A, x); 
 y2	= sigmoid(y1, fac);
+% for i=1:150
+%     fprintf('%i %.16f %.16f %.16f\n',i-1, x(i),y1(i),y2(i))
+% end
+
 % hair cell membrane (low-pass <= 4 kHz); ignored for LINEAR ionic channels
 if (fac ~= -2), y2 = filter(1, [1 -beta], y2); end;
 y2_h = y2;
@@ -130,6 +138,7 @@ for ch = (M-1):-1:1,
 	B  = real(COCHBA((0:p)+2, ch));	% moving average coefficients
 	A  = imag(COCHBA((0:p)+2, ch));	% autoregressive coefficients
 	y1 = filter(B, A, x); 
+    
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	% TRANSDUCTION: hair cells
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,7 +146,7 @@ for ch = (M-1):-1:1,
 
 	% ionic channels (sigmoid function)
 	y2 = sigmoid(y1, fac);
-
+%     fprintf('%i %.9f %.9f %.9f\n',ch,y2(100),y2_h(100),y2(100)-y2_h(100));
 	% hair cell membrane (low-pass <= 4 kHz) ---> y2 (ignored for linear)
 	if (fac ~= -2), y2 = filter(1, [1 -beta], y2); end;
 
@@ -146,15 +155,21 @@ for ch = (M-1):-1:1,
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	% masked by higher (frequency) spatial response
 	y3   = y2 - y2_h;
+%     if ch==11
+%         for i=1:50
+%             fprintf('%.6f %.8f %.8f %.8f\n',x(99+i),y2(99+i),y2_h(99+i),y3(99+i))
+%         end
+%         pause;
+%     end
 	y2_h = y2; 
-
+    
 	% spatial smoother ---> y3 (ignored)
 	%y3s = y3 + y3_h;
 	%y3_h = y3;
 
 	% half-wave rectifier ---> y4
 	y4 = max(y3, 0);
-
+    
 	% temporal integration window ---> y5
 	if alph,	% leaky integration
 		y5 = filter(1, [1 -alph], y4);
@@ -166,7 +181,12 @@ for ch = (M-1):-1:1,
         	v5(:, ch) = mean(reshape(y4, L_frm, N))';
         end
 	end;
-
+%     if ch==11
+%         B
+%         A
+%         v5(:, ch)
+%         pause;
+%     end
 	if (VERB && filt == 'p') , if rem(ch, 24) == 0,
 		if exist('octband'), octband = octband + 1; 
 		else, octband = 1; end;
