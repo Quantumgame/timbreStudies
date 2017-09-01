@@ -109,9 +109,6 @@ v5 = zeros(N, M-1);
 p	= real(COCHBA(1, M));
 B	= real(COCHBA((0:p)+2, M));
 A	= imag(COCHBA((0:p)+2, M));
-for i=1:length(B)
-    fprintf('%.16f %.16f\n',A(i),B(i));
-end
 y1	= filter(B, A, x); 
 y2	= sigmoid(y1, fac);
 % for i=1:150

@@ -57,11 +57,8 @@ function corticalRepresentation = STRFmodelWithCut(filename,scalesVector,ratesVe
     nfft_rate = nfft_fac * 2^nextpow2(length(modulationScale(:,1))) ;
     [scaleRate, phaseScaleRate] = scaletime2scalerate(modulationScale .* exp(1i * phaseScale), nbChannels, nbChOct, sr_time, nfft_rate, nfft_scale) ;
     
-    
     [corticalRepresentation] = scaleRate2cortical(scaleRate, phaseScaleRate, stft, scalesVector, ratesVector, nbChOct, sr_time, nfft_scale, nfft_rate, 2) ;
-    corticalRepresentation(2,:,10,10)
-    %size(corticalRepresentation)
-    %plot(corticalRepresentation(2,:,10,10))
+
       else     
           corticalRepresentation = [] ;
       end
