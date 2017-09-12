@@ -1,3 +1,6 @@
+# Copyright (c) Baptiste Caramiaux, Etienne Thoret
+# All rights reserved
+
 import numpy as np
 import matplotlib.pylab as plt
 

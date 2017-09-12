@@ -7,82 +7,48 @@ import numpy as np
 import aifc
 import math
 from scipy import signal
-
-#### TOOLS
-
-
-def _raisedCosine(x, mu, s):
-    return 1 / 2 / s * (1 + np.cos((x - mu) / s * math.pi)) * s
-
-
-def _nextpow2(n):
-    counter = 1
-    while math.pow(2, counter) < n:
-        counter += 1
-    return counter
-
-
-def _angle(compl_values):
-    real_values = np.array([x.real for x in compl_values])
-    imag_values = np.array([x.imag for x in compl_values])
-    return np.arctan2(imag_values, real_values)
-
-
-def _sigmoid(x, fac):
-    '''
-    Compute sigmoidal function
-    '''
-    y = x
-    if fac > 0:
-        y = 1. / (1. + np.exp(-y / fac))
-    elif fac == 0:
-        y = (y > 0)
-    elif fac == -1:
-        y = np.max(y, 0)
-    elif fac == -3:
-        raise ValueError('not implemented')
-    return y
-
+import utils
 
 #### SCALE/ RATE
 
 
-def spec2scaletime(stft, nbChannels, nbChOct, sr_time, nfft_scale):
+def spec2scaletime(stft, nbChannels, nbChOct, sr_time, nfft_rate, nfft_scale,
+                   KIND):
     LgtTime = stft.shape[0]
-    modulationScale = np.zeros((LgtTime, nfft_scale), dtype=complex)
-    phaseScale = np.zeros((LgtTime, nfft_scale))
+    mod_scale = np.zeros((LgtTime, nfft_scale), dtype=complex)
+    phase_scale = np.zeros((LgtTime, nfft_scale))
     # perform a FFT for each time slice
     for i in range(LgtTime):
-        modulationScale[i, :] = np.fft.fft(stft[i, :], nfft_scale)
-        phaseScale[i, :] = _angle(modulationScale[i, :])
-    modulationScale = np.abs(modulationScale)  # modulus of the fft
+        mod_scale[i, :] = np.fft.fft(stft[i, :], nfft_scale)
+        phase_scale[i, :] = utils.angle(mod_scale[i, :])
+    mod_scale = np.abs(mod_scale)  # modulus of the fft
     scales = np.linspace(0, nfft_scale + 1, nbChOct)
-    times = np.linspace(0, modulationScale.shape[1] + 1, LgtTime / sr_time)
-    return modulationScale, phaseScale, times, scales
+    times = np.linspace(0, mod_scale.shape[1] + 1, LgtTime / sr_time)
+    return mod_scale, phase_scale, times, scales
 
 
-def scaletime2scalerate(modulationScale, nbChannels, nbChOct, sr_time,
-                        nfft_rate, nfft_scale):
-    LgtScale = modulationScale.shape[1]
+def scaletime2scalerate(mod_scale, nbChannels, nbChOct, sr_time, nfft_rate,
+                        nfft_scale, KIND):
+    LgtScale = mod_scale.shape[1]
     scaleRate = np.zeros((nfft_rate, LgtScale), dtype=complex)
-    phaseScaleRate = np.zeros((nfft_rate, LgtScale))
+    phase_scale_rate = np.zeros((nfft_rate, LgtScale))
     for i in range(LgtScale):
-        scaleRate[:, i] = np.fft.fft(modulationScale[:, i], nfft_rate)
-        phaseScaleRate[:, i] = _angle(scaleRate[:, i])
+        scaleRate[:, i] = np.fft.fft(mod_scale[:, i], nfft_rate)
+        phase_scale_rate[:, i] = utils.angle(scaleRate[:, i])
     scaleRate = np.abs(scaleRate)
     rates = np.linspace(0, nfft_rate + 1, sr_time)
     scales = np.linspace(0, nfft_scale + 1, nbChOct)
-    return scaleRate, phaseScaleRate, rates, scales
+    return scaleRate, phase_scale_rate, rates, scales
 
 
-def scaleRate2cortical(scaleRate, phaseScaleRate, stft, scalesVector,
-                       ratesVector, nbChOct, sr_time, nfft_scale, nfft_rate,
-                       KIND):
+def scaleRate2cortical(stft, scaleRate, phase_scale_rate, scalesVector,
+                       ratesVector, nbChannels, nbChOct, sr_time, nfft_rate,
+                       nfft_scale, KIND):
     LgtRateVector = len(ratesVector)
     LgtScaleVector = len(scalesVector)  # length scale vector
     LgtFreq = stft.shape[1]
     LgtTime = stft.shape[0]
-    corticalRepresentation = np.zeros(
+    cortical_rep = np.zeros(
         (LgtTime, LgtFreq, LgtScaleVector, LgtRateVector), dtype=complex)
     for j in range(LgtRateVector):
         fc_rate = ratesVector[j]
@@ -91,7 +57,7 @@ def scaleRate2cortical(scaleRate, phaseScaleRate, stft, scalesVector,
             -3.5 * t) * abs(fc_rate)
         h = h - np.mean(h)
         STRF_rate0 = np.fft.fft(h, nfft_rate)
-        A = _angle(STRF_rate0[:nfft_rate // 2])
+        A = utils.angle(STRF_rate0[:nfft_rate // 2])
         A[0] = 0.0  # instead of pi
         STRF_rate = np.absolute(STRF_rate0[:nfft_rate // 2])
         STRF_rate = STRF_rate / np.max(STRF_rate)
@@ -108,7 +74,7 @@ def scaleRate2cortical(scaleRate, phaseScaleRate, stft, scalesVector,
         z1 = np.zeros((nfft_rate, nfft_scale // 2), dtype=complex)
         for m in range(nfft_scale // 2):
             z1[:, m] = STRF_rate * scaleRate[:, m] * np.exp(
-                1j * phaseScaleRate[:, m])
+                1j * phase_scale_rate[:, m])
 
         # z1.resize((nfft_rate,nfft_rate))
         for i in range(nfft_scale // 2):
@@ -130,39 +96,43 @@ def scaleRate2cortical(scaleRate, phaseScaleRate, stft, scalesVector,
             for n in range(LgtTime):
                 temp = np.fft.ifft(STRF_scale * z1[n, :], nfft_scale)
                 z[n, :] = temp[:nfft_scale // 2]
-            corticalRepresentation[:, :, i, j] = z[:LgtTime, :LgtFreq]
-    return corticalRepresentation
+            cortical_rep[:, :, i, j] = z[:LgtTime, :LgtFreq]
+    return cortical_rep
 
 
 #### NLS lite
 
 
-def wav2aud(x_, paras, filt='p', VERB=0):
-    # Wav2Aud form NSL toolbox
-    # http://www.isr.umd.edu/Labs/NSL/Software.htm
-    #
+def wav2aud(x_, frame_length, time_constant, compression_factor, octave_shift,
+            filt, VERB):
+    '''
+    Wav2Aud form NSL toolbox
+    @url http://www.isr.umd.edu/Labs/NSL/Software.htm
+    '''
 
-    if (filt == 'k'):
-        raise ValueError('Please use wav2aud_fir function for FIR filtering!')
+    # if (filt == 'k'):
+    #     raise ValueError('Please use wav2aud_fir function for FIR filtering!')
 
-    if (filt == 'p_o'):
-        COCHBA = np.genfromtxt('COCHBA_aud24_old.txt', dtype=str)
-    else:
-        COCHBA = np.genfromtxt('COCHBA_aud24.txt', dtype=str)
-    # convert str to complex (may be a better way...)
-    COCHBA = np.asarray(
-        [[complex(i.replace('i', 'j')) for i in COCHBA[row, :]]
-         for row in range(len(COCHBA))])
+    # if (filt == 'p_o'):
+    #     COCHBA = np.genfromtxt('COCHBA_aud24_old.txt', dtype=str)
+    # else:
+    #     COCHBA = np.genfromtxt('COCHBA_aud24.txt', dtype=str)
+    # # convert str to complex (may be a better way...)
+    # COCHBA = np.asarray(
+    #     [[complex(i.replace('i', 'j')) for i in COCHBA[row, :]]
+    #      for row in range(len(COCHBA))])
+    COCHBA = utils.COCHBA
 
     L, M = COCHBA.shape[0], COCHBA.shape[1]  # p_max = L - 2;
     L_x = len(x_)  # length of input
 
     # octave shift, nonlinear factor, frame length, leaky integration
-    shft = paras[3]  # octave shift
-    fac = paras[2]  # nonlinear factor
-    L_frm = round(paras[0] * 2**(4 + shft))  # frame length (points)
+    shft = octave_shift  #paras[3]  # octave shift
+    fac = compression_factor  #paras[2]  # nonlinear factor
+    L_frm = round(frame_length * 2**(4 + shft))  # frame length (points)
 
-    alph = math.exp(-1 / (paras[1] * 2**(4 + shft))) if paras[1] else 0
+    alph = math.exp(-1 / (time_constant * 2**
+                          (4 + shft))) if time_constant else 0
 
     # hair cell time constant in ms
     haircell_tc = 0.5
@@ -179,7 +149,7 @@ def wav2aud(x_, paras, filt='p', VERB=0):
     B = COCHBA[np.arange(int(p) + 1) + 1, M - 1].real
     A = COCHBA[np.arange(int(p) + 1) + 1, M - 1].imag
     y1 = signal.lfilter(B, A, x, axis=0)
-    y2 = _sigmoid(y1, fac)
+    y2 = utils.sigmoid(y1, fac)
     if (fac != -2):
         y2 = signal.lfilter([1.0], [1.0, -beta], y2, axis=0)
     y2_h = y2
@@ -190,7 +160,7 @@ def wav2aud(x_, paras, filt='p', VERB=0):
         B = COCHBA[np.arange(int(p) + 1) + 1, ch].real
         A = COCHBA[np.arange(int(p) + 1) + 1, ch].imag
         y1 = signal.lfilter(B, A, x, axis=0)
-        y2 = _sigmoid(y1, fac)
+        y2 = utils.sigmoid(y1, fac)
         # hair cell membrane (low-pass <= 4 kHz) ---> y2 (ignored for linear)
         if (fac != -2): y2 = signal.lfilter([1.0], [1.0, -beta], y2, axis=0)
 
@@ -230,7 +200,7 @@ def STRF(filename, scalesVector, ratesVector, durationCut, durationRCosDecay):
         wavtemp = wavtemp[:int(durationCut * fs_wav)]
         wavtemp[wavtemp.shape[0] - int(fs_wav * durationRCosDecay):] = wavtemp[
             wavtemp.shape[0] - int(
-                fs_wav * durationRCosDecay):] * _raisedCosine(
+                fs_wav * durationRCosDecay):] * utils.raised_cosine(
                     np.arange(int(fs_wav * durationRCosDecay)), 0,
                     int(fs_wav * durationRCosDecay))
 
@@ -240,38 +210,52 @@ def STRF(filename, scalesVector, ratesVector, durationCut, durationRCosDecay):
 
     # Peripheral auditory model (from NSL toolbox)
 
-    # compute spectrogram with wav2aud (from NSL toolbox), first f0 = 180 Hz
-    nbChannels = 128  # nb channels (128 ch. in the NSL toolbox)
-    nbChOct = 24  # nb channels per octaves (24 ch/oct in the NSL toolbox)
-    sr_time = 125  # sample rate (125 Hz in the NSL toolbox)
-    frame_length = 1000 / sr_time  # frame length (in ms)
-    time_constant = 8  # time constant (lateral inhibitory network)
+    # # compute spectrogram with wav2aud (from NSL toolbox), first f0 = 180 Hz
+    # nbChannels = 128  # nb channels (128 ch. in the NSL toolbox)
+    # nbChOct = 24  # nb channels per octaves (24 ch/oct in the NSL toolbox)
+    # sr_time = 125  # sample rate (125 Hz in the NSL toolbox)
 
-    compression_factor = -2
-    # fac =  0,  y = (x > 0), full compression, booleaner.
-    # fac = -1, y = max(x, 0), half-wave rectifier
-    # fac = -2, y = x, linear function
+    wav2aud_args = {
+        'frame_length': 1000 / 125,  # sample rate 125 Hz in the NSL toolbox
+        'time_constant': 8,
+        'compression_factor': -2,
+        'octave_shift': math.log2(fs / 16000),
+        'filt': 'p',
+        'VERB': 0
+    }
+    # frame_length = 1000 / sr_time  # frame length (in ms)
+    # time_constant = 8  # time constant (lateral inhibitory network)
+    # compression_factor = -2
+    # # fac =  0,  y = (x > 0), full compression, booleaner.
+    # # fac = -1, y = max(x, 0), half-wave rectifier
+    # # fac = -2, y = x, linear function
+    # octave_shift = math.log2(fs / 16000)  # octave shift
+    stft = wav2aud(wavtemp, **wav2aud_args)
 
-    octave_shift = math.log2(fs / 16000)  # octave shift
-    stft = wav2aud(wavtemp, \
-                   [frame_length, time_constant, compression_factor, octave_shift])
-
+    strf_args = {
+        'nbChannels': 128,
+        'nbChOct': 24,
+        'sr_time': 125,
+        'nfft_rate': 2 * 2**utils.nextpow2(stft.shape[0]),
+        'nfft_scale': 2 * 2**utils.nextpow2(stft.shape[1]),
+        'KIND': 2
+    }
     # Spectro-temporal modulation analysis
     # Based on Hemery & Aucouturier (2015) Frontiers Comp Neurosciences
-    nfft_fac = 2  # multiplicative factor for nfft_scale and nfft_rate
-    nfft_scale = nfft_fac * 2**_nextpow2(stft.shape[1])
-    modulationScale, phaseScale, _, _ = spec2scaletime(
-        stft, nbChannels, nbChOct, sr_time, nfft_scale)
+    # nfft_fac = 2  # multiplicative factor for nfft_scale and nfft_rate
+    # nfft_scale = nfft_fac * 2**utils.nextpow2(stft.shape[1])
+    mod_scale, phase_scale, _, _ = spec2scaletime(stft, **strf_args)
 
     # Scales vs. Time => Scales vs. Rates
-    nfft_rate = nfft_fac * 2**_nextpow2(stft.shape[0])
-    scaleRate, phaseScaleRate, _, _ = scaletime2scalerate(
-        modulationScale * np.exp(1j * phaseScale), nbChannels, nbChOct,
-        sr_time, nfft_rate, nfft_scale)
-    corticalRepresentation = scaleRate2cortical(
-        scaleRate, phaseScaleRate, stft, scalesVector, ratesVector, nbChOct,
-        sr_time, nfft_scale, nfft_rate, 2)
-
+    # nfft_rate = nfft_fac * 2**utils.nextpow2(stft.shape[0])
+    scale_rate, phase_scale_rate, _, _ = scaletime2scalerate(mod_scale * np.exp(1j * phase_scale),\
+                                                            **strf_args)
+    #nbChannels, nbChOct, sr_time, nfft_rate, nfft_scale)
+    cortical_rep = scaleRate2cortical(stft, scale_rate,
+                                                phase_scale_rate, scalesVector,
+                                                ratesVector, **strf_args)
+    #nbChOct, sr_time, nfft_scale, nfft_rate, 2)
+    return cortical_rep
 
 if __name__ == "__main__":
     scalesVector = [
