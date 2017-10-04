@@ -5,14 +5,20 @@ import numpy as np
 import matplotlib.pylab as plt
 
 
-def kernel_optim(input_data, target_data, cost='correlation', num_loops=20000):
+def kernel_optim(input_data,
+                 target_data,
+                 cost='correlation',
+                 init_sig_mean=10.0,
+                 init_sig_var=0.5,
+                 num_loops=10000):
 
     ndims, ninstrus = input_data.shape[0], input_data.shape[1]
+    # print(ndims, ninstrus)
     no_samples = ninstrus * (ninstrus - 1) / 2
     grad_corrfunc = np.zeros((ndims, 1))
-    sigmas = 10.0 + 0.5 * np.random.randn(ndims, 1)
+    sigmas = np.abs(init_sig_mean + init_sig_var * np.random.randn(ndims, 1))
 
-    correlations = np.zeros((num_loops, 1))
+    correlations = []  #np.zeros((num_loops, 1))
 
     idx_triu = np.triu_indices(target_data.shape[0], k=1)
     target_v = target_data[idx_triu]
@@ -21,6 +27,8 @@ def kernel_optim(input_data, target_data, cost='correlation', num_loops=20000):
 
     kernel = np.zeros((ninstrus, ninstrus))
     dkernel = np.zeros((ninstrus, ninstrus, ndims))
+
+    learned_sigmas = []
 
     for loop in range(num_loops):  # 0 to nump_loops-1
         sigmas = sigmas - grad_corrfunc * sigmas
@@ -40,7 +48,7 @@ def kernel_optim(input_data, target_data, cost='correlation', num_loops=20000):
         Jn = np.sum(
             np.multiply(kernel_v - mean_kernel, target_v - mean_target))
         Jd = (no_samples - 1) * std_target * std_kernel
-        correlations[loop] = Jn / Jd
+        correlations.append(Jn / Jd)
 
         for k in range(ndims):
             dkernel_k_v = dkernel[:, :, k][idx_triu]
@@ -50,11 +58,16 @@ def kernel_optim(input_data, target_data, cost='correlation', num_loops=20000):
                         np.sum(dkernel_k_v * (kernel_v - mean_kernel))
             grad_corrfunc[k] = (Jd * dJn - Jn * dJd) / (Jd**2)
         # verbose
-        if ((loop + 1) % 100 == 0):
+        if ((loop + 1) % 1000 == 0):
             print('loop=%d | grad=%.6f | J=%.6f' %
                   (loop + 1, np.linalg.norm(grad_corrfunc, 2),
                    correlations[loop]))
-    return correlations
+            learned_sigmas.append(sigmas)
+            # if (log_filename != ''):
+            #     np.savetxt(log_filename+'_sigmas.txt', learned_sigmas)
+            #     np.savetxt(log_filename+'_correlation.txt', correlations)
+    return correlations, learned_sigmas
+
 
 if __name__ == "__main__":
     data_dir = '../tmpdata/'

@@ -65,6 +65,8 @@ COCHBA = np.asarray([
           ])
 
 
+
+
 def get_strf_params():
     strf_params = {}
     strf_params['scalesVector'] = [0.25, 0.35, 0.50, 0.71, 1.0, 1.41, 2.00, 2.83, 4.00, 5.66, 8.00]
@@ -89,5 +91,5 @@ def get_dissimalrity_matrix(folder_path = '../ext/data/'):
     #            n = n + 1
     #            matDis[rowMat, columnMat, i] = temp[0,n-1]
     # return np.mean(matDis, axis=2).T
-    return np.loadtxt(folder_path + 'dissimilarity_matrix.txt')
+    return np.loadtxt(folder_path + '/dissimilarity_matrix.txt')
 
