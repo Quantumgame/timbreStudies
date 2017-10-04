@@ -22,7 +22,7 @@ def timbrespace_strf(timbrespace, timbrespace_db):
     if not valid_timbrespace_name:
         raise ValueError('{} is a wrong timbre space name'.format(timbrespace))
     if (not os.path.isfile(
-            os.path.join('processed_data', timbrespace + '_strfs.pkl'))):
+            os.path.join(timbrespace + '_strfs.pkl'))):
         strf_params = utils.get_strf_params()
         strfs = []
         for root, dirs, files in os.walk(el['path']):
@@ -34,12 +34,11 @@ def timbrespace_strf(timbrespace, timbrespace_db):
                     strfs.append(STRF(os.path.join(root, name), **strf_params))
         pickle.dump(strfs,
                     open(
-                        os.path.join('processed_data',
-                                     timbrespace + '_strfs.pkl'), 'wb'))
+                        os.path.join(timbrespace + '_strfs.pkl'), 'wb'))
     else:
         strfs = pickle.load(
             open(
-                os.path.join('processed_data', timbrespace + '_strfs.pkl'),
+                os.path.join(timbrespace + '_strfs.pkl'),
                 'rb'))
     return strfs
 
