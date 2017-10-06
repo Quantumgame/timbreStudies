@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import aifc
 
 
 def raised_cosine(x, mu, s):
@@ -67,7 +68,7 @@ COCHBA = np.asarray([
 
 
 
-def get_strf_params():
+def load_strf_params():
     strf_params = {}
     strf_params['scalesVector'] = [0.25, 0.35, 0.50, 0.71, 1.0, 1.41, 2.00, 2.83, 4.00, 5.66, 8.00]
     strf_params['ratesVector'] = [-128, -90.5, -64, -45.3, -32, -22, -16, -11.3, -8, -5.8, -4, 2, 1, .5, .5, \
@@ -93,3 +94,13 @@ def get_dissimalrity_matrix(folder_path = '../ext/data/'):
     # return np.mean(matDis, axis=2).T
     return np.loadtxt(folder_path + '/dissimilarity_matrix.txt')
 
+
+def audio_data(filename):
+    if (filename.split('.')[-1] == 'aiff'):
+        aif = aifc.open(filename, 'r')
+        fs_wav = aif.getframerate()
+        wavtemp = aif.readframes(aif.getnframes())
+        wavtemp = np.fromstring(wavtemp, np.short).byteswap() / 32767.0
+        return wavtemp, fs_wav
+    # else:
+    #     raise ValueError('Not implemented yet')

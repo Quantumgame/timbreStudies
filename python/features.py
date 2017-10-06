@@ -4,7 +4,6 @@ Copyright (c) Baptiste Caramiaux, Etienne Thoret
 All rights reserved
 '''
 import numpy as np
-import aifc
 import math
 from scipy import signal
 import utils
@@ -186,27 +185,22 @@ def wav2aud(x_, frame_length, time_constant, compression_factor, octave_shift,
 #### STRF
 
 
-def STRF(filename, scalesVector, ratesVector, durationCut, durationRCosDecay):
+def strf(wavtemp, fs, scalesVector, ratesVector, durationCut, durationRCosDecay):
 
     # loading a wav file (uncomment to use)
-    fs = 8000
-    aif = aifc.open(filename, 'r')
-
-    fs_wav = aif.getframerate()
-    wavtemp = aif.readframes(aif.getnframes())
-    wavtemp = np.fromstring(wavtemp, np.short).byteswap() / 32767.0
-    # print(len(wavtemp),math.floor(durationCut * fs_wav))
-    if wavtemp.shape[0] > math.floor(durationCut * fs_wav):
-        wavtemp = wavtemp[:int(durationCut * fs_wav)]
-        wavtemp[wavtemp.shape[0] - int(fs_wav * durationRCosDecay):] = wavtemp[
+    new_fs = 8000
+    # print(len(wavtemp),math.floor(durationCut * fs))
+    if wavtemp.shape[0] > math.floor(durationCut * fs):
+        wavtemp = wavtemp[:int(durationCut * fs)]
+        wavtemp[wavtemp.shape[0] - int(fs * durationRCosDecay):] = wavtemp[
             wavtemp.shape[0] - int(
-                fs_wav * durationRCosDecay):] * utils.raised_cosine(
-                    np.arange(int(fs_wav * durationRCosDecay)), 0,
-                    int(fs_wav * durationRCosDecay))
+                fs * durationRCosDecay):] * utils.raised_cosine(
+                    np.arange(int(fs * durationRCosDecay)), 0,
+                    int(fs * durationRCosDecay))
 
     wavtemp = (wavtemp / 1.01) / np.max(wavtemp)
     wavtemp = signal.resample(wavtemp, int(
-        wavtemp.shape[0] / fs_wav * fs))  # resample to 8000 Hz
+        wavtemp.shape[0] / fs * new_fs))  # resample to 8000 Hz
 
     # Peripheral auditory model (from NSL toolbox)
 
@@ -219,7 +213,7 @@ def STRF(filename, scalesVector, ratesVector, durationCut, durationRCosDecay):
         'frame_length': 1000 / 125,  # sample rate 125 Hz in the NSL toolbox
         'time_constant': 8,
         'compression_factor': -2,
-        'octave_shift': math.log2(fs / 16000),
+        'octave_shift': math.log2(new_fs / 16000),
         'filt': 'p',
         'VERB': 0
     }
@@ -229,7 +223,7 @@ def STRF(filename, scalesVector, ratesVector, durationCut, durationRCosDecay):
     # # fac =  0,  y = (x > 0), full compression, booleaner.
     # # fac = -1, y = max(x, 0), half-wave rectifier
     # # fac = -2, y = x, linear function
-    # octave_shift = math.log2(fs / 16000)  # octave shift
+    # octave_shift = math.log2(new_fs / 16000)  # octave shift
     stft = wav2aud(wavtemp, **wav2aud_args)
 
     strf_args = {
