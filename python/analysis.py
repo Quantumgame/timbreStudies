@@ -16,6 +16,10 @@ import time
 def analyze_specific(timbrespace_name='Iverson1993Whole'):
     timbrespace_dissimat = datasets.load_timbrespace_dismatrix(timbrespace_name)
     timbrespace_features = datasets.load_timbrespace_features(timbrespace_name, representations=['strf'])
+    # windowed case:
+    # timbrespace_features = datasets.load_timbrespace_features(timbrespace_name, 
+    #                                                           representations=['strf'], 
+    #                                                           window={'win_length': 0.2, 'hop_length': 10.0})
     features_reduced = [projection.pca(np.absolute(timbrespace_features['strf'][snd_i]), \
                                        timbrespace_features['strf'][snd_i].shape[1], \
                                        n_components=1).flatten() 
