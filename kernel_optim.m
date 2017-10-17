@@ -1,4 +1,4 @@
-function [sigmas, kernel_v, correlations] = kernel_optim(x, target, direction)
+function [sigmas, kernel_v, correlations] = kernel_optim(x, target)
 %%%     
 %%%     x : features
 %%%     target : dissimilarity matrix
@@ -27,7 +27,7 @@ std_target = std(target_v);
 
 for loop = 1:num_loops
     
-    sigmas = sigmas + direction * grad_corrfunc .* sigmas ;
+    sigmas = sigmas - grad_corrfunc .* sigmas ;
     
     for i=1:ninstrus
         for j=i+1:ninstrus
@@ -56,11 +56,11 @@ for loop = 1:num_loops
     
     correlations(loop) = Jn/Jd;    
     
-%     %verbose
-%     if(mod(loop,100)==0)
-%         fprintf('loop=%d | grad=%.6f | J=%.6f\n', loop, norm(grad_corrfunc,2), correlations(loop));
-%     end
+    %verbose
+    if(mod(loop,100)==0)
+        fprintf('loop=%d | grad=%.6f | J=%.6f\n', loop, norm(grad_corrfunc,2), correlations(loop));
+    end
     elapsed(loop) = toc;
 end
-mean(elapsed)
+% mean(elapsed)
 

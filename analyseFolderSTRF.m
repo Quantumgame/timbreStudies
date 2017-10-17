@@ -68,8 +68,7 @@ end
 %end
 
 %% optimization
-grad_direction = -1; % ascent (descent: -1)
-[sigmas, kernel, correlations] = kernel_optim(tab_red, matDis, grad_direction);
+[sigmas, kernel, correlations] = kernel_optim(tab_red, matDis);
 
 subplot(1,2,1)
 plot(correlations)
