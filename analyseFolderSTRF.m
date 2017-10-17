@@ -3,13 +3,14 @@ clc ;
 
 % load NSL Toolbox functions (http://www.isr.umd.edu/Labs/NSL/Software.htm)
 addpath(genpath('./NSLfunctions/')); 
-addpath('./ext/func/') ;
+addpath('./ext/') ;
 clear COCHBA ;
 global COCHBA ; 
 load aud24; % load cochlear filter coefficients
 
 % initialize sound path
-soundPath = './ext/sounds/' ;
+timbreSpace = 'Iverson1993Whole' ;
+soundPath = sprintf('./ext/sounds/%s/',timbreSpace);
 ext = 'aiff' ;
 addpath(soundPath) ;
 soundsList = dir(strcat(soundPath, '*.',ext)) ;
@@ -45,11 +46,13 @@ for iFile = 1:nbSounds
     STRFTab{iFile} = STRFmodelWithCut(soundsList(iFile).name, scalesVector, ratesVector, durationCut, durationRCosDecay) ;
 end
 
-% load perceptual results in soundfiles folder
-run(strcat(soundPath,'mainBehavioral.m')) ;
-matDis = mean(matDis, 3)' ; % perceptual dissimilarity matrix
+%%
+% % load perceptual results in soundfiles folder
+% run(strcat(soundPath,'mainBehavioral.m')) ;
+% matDis = mean(matDis, 3)' ; % perceptual dissimilarity matrix
+matDisFileName = sprintf('./ext/data/%s_dissimilarity_matrix.txt',timbreSpace);
+matDis = load(matDisFileName);
 meanMatDis = treshape(matDis,3) ; % up triangle of the dissimilarity matrix
-
 MAT = zeros(nbSounds,nbSounds) ;
 
 %% pca 
@@ -68,7 +71,10 @@ end
 %end
 
 %% optimization
-[sigmas, kernel, correlations] = kernel_optim(tab_red, matDis);
+arguments.numLoops = 20000;
+arguments.initMeanSigma = 10.0;
+arguments.initVarSigma = 0.5;
+[sigmas, kernel, correlations] = kernel_optim(tab_red, matDis, arguments);
 
 subplot(1,2,1)
 plot(correlations)

@@ -1,4 +1,4 @@
-function [sigmas, kernel_v, correlations] = kernel_optim(x, target)
+function [sigmas, kernel_v, correlations] = kernel_optim(x, target, arguments)
 %%%     
 %%%     x : features
 %%%     target : dissimilarity matrix
@@ -9,15 +9,16 @@ function [sigmas, kernel_v, correlations] = kernel_optim(x, target)
 %%%         Music in our ears: The biological bases of musical timbre perception
 %%%         Public Library of Science Computational Biology, Vol. 8(11), Nov 2012.
 
+num_loops = arguments.numLoops;
+
 
 [ndims,ninstrus] = size(x);
 
 no_samples = ninstrus*(ninstrus-1)/2;
 
 grad_corrfunc = zeros(ndims,1);
-sigmas = 10.0+0.5*randn(ndims,1);
+sigmas = arguments.initMeanSigma + arguments.initVarSigma * randn(ndims,1);
 
-num_loops = 100;
 correlations = zeros(num_loops,1);
 
 target_v = target(find(triu(ones(size(target)),1)));
@@ -57,7 +58,7 @@ for loop = 1:num_loops
     correlations(loop) = Jn/Jd;    
     
     %verbose
-    if(mod(loop,100)==0)
+    if(mod(loop, 500)==0)
         fprintf('loop=%d | grad=%.6f | J=%.6f\n', loop, norm(grad_corrfunc,2), correlations(loop));
     end
     elapsed(loop) = toc;
