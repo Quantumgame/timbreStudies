@@ -1,4 +1,4 @@
-function new_data = pcaGlobal5(data, varThresh)
+function [new_data, pc] = pcaGlobal5(data, varThresh)
 % this is a global feature transform function (see evalSimilarity)
 % transforms a n*p1 data matrix by computing its principal components, 
 % keeping the p2 first components such that their cumulated variance > varThresh, 
@@ -25,7 +25,8 @@ Y = data / sqrt(n-1);
 % SVD does it all
 [u,S,pc] = fsvd(Y,MAX_P);
 % project the original data
-points = transpose(pc' * data');
+% points = transpose(pc' * data');
+points = data * pc;
 
 % calculate the variances
 S = diag(S);
