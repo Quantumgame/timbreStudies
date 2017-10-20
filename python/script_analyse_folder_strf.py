@@ -37,7 +37,7 @@ for i, tsp in enumerate(timbrespace_db.keys()):
         'cost': 'correlation', 
         'init_sig_mean': 10.0,
         'init_sig_var': 1.0,
-        'num_loops': 30000,
+        'num_loops': 2000000,
     }
     # optimization
     correlations, sigmas = kernel_optim(tab_red, dissimil_mat, **optim_args)
