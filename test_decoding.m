@@ -28,6 +28,20 @@ for snd = 1 : 16
     title(strcat('Sound',num2str(snd)));
 end
 
+figure;
+for snd = 1 : 16
+
+    % do same process before computing PCA in main script
+    strf_sndi = abs(STRFTab{snd});
+    strf_sndi = squeeze(mean(strf_sndi,1)); 
+    
+    pca_sndi_proj = squeeze(pcaProjections(snd,:,:,:));
+    subplot(4,4,snd);imagesc(squeeze(mean(pca_sndi_proj,1))) ;
+    title(strcat('Sound',num2str(snd)));
+end
+
+
+
 % % plot for each freq
 % figure;
 % for freqi = 1:size(strf_sndi,1)

@@ -17,14 +17,13 @@ num_loops = arguments.numLoops;
 no_samples = ninstrus*(ninstrus-1)/2;
 
 grad_corrfunc = zeros(ndims,1);
-sigmas = arguments.initMeanSigma + arguments.initVarSigma * randn(ndims,1);
+sigmas = arguments.initMeanSigma + arguments.initVarSigma * randn(ndims,1) ;
 
 correlations = zeros(num_loops,1);
 
 target_v = target(find(triu(ones(size(target)),1)));
-mean_target = mean(target_v);
-std_target = std(target_v);
-
+mean_target = mean(target_v) ;
+std_target = std(target_v) ;
 
 for loop = 1:num_loops
     
@@ -32,8 +31,8 @@ for loop = 1:num_loops
     
     for i=1:ninstrus
         for j=i+1:ninstrus
-            kernel(i,j) = exp(-1*sum( ((x(:,i)-x(:,j))./sigmas).^2 ) );
-            dkernel(i,j,:) = 2*kernel(i,j)*((x(:,i)-x(:,j)).^2)./(sigmas.^3);
+            kernel(i,j) = exp(-1*sum( ((x(:,i)-x(:,j))./sigmas).^2 ) ) ;
+            dkernel(i,j,:) = 2*kernel(i,j)*((x(:,i)-x(:,j)).^2)./(sigmas.^3) ;
         end
     end
     
@@ -41,8 +40,8 @@ for loop = 1:num_loops
     mean_kernel = mean(kernel_v);
     std_kernel = std(kernel_v);
     
-    Jn = sum((kernel_v-mean_kernel).*(target_v-mean_target));
-    Jd = (no_samples-1)*std_target*std_kernel;
+    Jn = sum((kernel_v-mean_kernel).*(target_v-mean_target)) ;
+    Jd = (no_samples-1)*std_target*std_kernel   ;
     
     tic;
     
@@ -55,7 +54,7 @@ for loop = 1:num_loops
     end
     
     
-    correlations(loop) = Jn/Jd;    
+    correlations(loop) = Jn/Jd ;   
     
     %verbose
     if(mod(loop, 500)==0)

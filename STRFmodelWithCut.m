@@ -2,11 +2,8 @@
 
 function corticalRepresentation = STRFmodelWithCut(filename,scalesVector,ratesVector,durationCut,durationRCosDecay)
 
-
-
-
     %% loading a wav file (uncomment to use)
-      fs = 8000;          % sample rate
+      fs = 16000;          % sample rate
       [wavtemp, fs_wav] = audioread(filename) ;
       
       if length(wavtemp) > floor(durationCut*fs_wav)
