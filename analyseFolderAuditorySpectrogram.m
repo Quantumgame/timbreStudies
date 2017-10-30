@@ -16,15 +16,6 @@ addpath(soundPath) ;
 soundsList = dir(strcat(soundPath, '*.',ext)) ;
 nbSounds = length(soundsList) ;
 
-% audio parameters
-windowSize = 2048 ;
-frameStep = 512 ;
-fs = 44100 ;
-
-% scale / rate analysis parameters
-maxRate = fs / frameStep / 2 ; % max rate values
-maxScale = windowSize / (fs * 1e-3) / 2 ; % max scale value
-
 % waveform cut settings
 durationCut = .3 ;
 durationRCosDecay = .05 ;
@@ -73,7 +64,7 @@ for i = 1:nbSounds
     allAuditorySpectrogram = [allAuditorySpectrogram allAuditorySpectrogramTemp(:)] ;
 end
 
-arguments.numLoops = 50000;
+arguments.numLoops = 20000;
 arguments.initMeanSigma = 10.0;
 arguments.initVarSigma = 0.5;
 [sigmas, kernel, correlations] = kernel_optim(allAuditorySpectrogram, matDis, arguments);
@@ -85,8 +76,10 @@ subplot(1,3,2)
 imagesc(meanMatDis)
 subplot(1,3,3)
 imagesc(kernel)
+
+%% visualisation sigma
 figure
-imagesc(reshape(kernel,38,128))
+imagesc(reshape(sigmas,38,128)) 
 
 % hold on;
 % plot(meanMatDis./std(meanMatDis),'k')
