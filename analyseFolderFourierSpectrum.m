@@ -77,6 +77,11 @@ subplot(1,3,2)
 imagesc(meanMatDis)
 subplot(1,3,3)
 imagesc(kernel)
+
+%% visualisation sigma
+figure;
+plot(sigmas);
+
 % hold on;
 % plot(meanMatDis./std(meanMatDis),'k')
 % plot(kernel./std(kernel),'-r')
