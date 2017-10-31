@@ -18,16 +18,15 @@ MAX_P = 100;
 MAX_P = min([MAX_P n p]); 
 
 % subtract off the mean for each dimension
-mn = mean(data,1);
-data = data - repmat(mn,n,1);
+data = data - repmat(mean(data,1),n,1);
+
 % construct the matrix Y
 Y = data / sqrt(n-1);
 % SVD does it all
-[u,S,pc] = fsvd(Y,MAX_P);
+[u,S,pc] = fsvd(Y, MAX_P);
 % project the original data
 % points = transpose(pc' * data');
-points = data * pc;
-
+points = data * pc';
 % calculate the variances
 S = diag(S);
 variances = S .* S;
@@ -35,8 +34,13 @@ variances = S .* S;
 % find minimum nb of components needed to have var > varThresh
 cum_explained = cumsum(variances / sum(variances)); 
 where = find(cum_explained>=varThresh); 
-p2 = where(1); 
+if size(where,1) == 0
+    p2 = size(points,2) ;
+else
+    p2 = where(1); 
+end
 %fprintf(1, 'PCA: dim %d -> %d (%.2f prct variance)\n',p,p2,cum_explained(p2)); 
 
 %project data
 new_data = points(:,1:p2);
+%new_data = pc(:,1:p2);

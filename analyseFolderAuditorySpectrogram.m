@@ -37,33 +37,38 @@ matDis = load(matDisFileName);
 meanMatDis = treshape(matDis,3) ; % up triangle of the dissimilarity matrix
 MAT = zeros(nbSounds,nbSounds) ;
 
-% %% pca 
-% nbFreq = 128; % number of frequencies
-% allAudSpecProj = [] ;
-% pcaProjections = zeros(nbSounds, size(AuditorySpectrogramTab{1},2));
-% normalizationCoefs = zeros(nbSounds);
-% for i = 1:nbSounds
-%     fprintf('PCA on sound %02i\n',i);
-%     [AudSpecProj, pcaProjections(i,:,:,:)] = PCA_AUDSPEC(abs(AuditorySpectrogramTab{i}'),nbFreq) ;
-%     normalizationCoefs(i) = max(AudSpecProj(:));
-%     AudSpecProj = AudSpecProj / max(AudSpecProj(:)) ;
-%     allAudSpecProj = [allAudSpecProj AudSpecProj(:)] ;
-% end
 
-%%
-%tab_red = zeros(prod(size(STRFTab{1})),nbSounds);
-%for iFile = 1:nbSounds
-%    tab_red(:,iFile) = STRFTab{iFile}(:);
-%end
-
-%% optimization
+%% dimension reduction
 allAuditorySpectrogram = [] ;
-
-for i = 1:nbSounds
-    allAuditorySpectrogramTemp = pca(AuditorySpectrogramTab{i}' / max(max(AuditorySpectrogramTab{i}))) ;
-    allAuditorySpectrogram = [allAuditorySpectrogram allAuditorySpectrogramTemp(:)] ;
+pca_config = 'global' ; % 'local', 'global', 'none'
+switch pca_config
+    case 'local'
+        for i = 1:nbSounds
+            %[pcomps, allAuditorySpectrogramTemp] = pca(AuditorySpectrogramTab{i}') ;
+            allAuditorySpectrogramTemp = pcaGlobal5(AuditorySpectrogramTab{i}', 100.0) ;
+            size(allAuditorySpectrogramTemp)
+            allAuditorySpectrogram = [allAuditorySpectrogram allAuditorySpectrogramTemp(:)] ;
+        end
+    case 'global'
+        pcaArray = [] ;
+        for i = 1:nbSounds
+            pcaArray = [pcaArray ; AuditorySpectrogramTab{i}] ;
+        end
+        princomps = pca(pcaArray) ;
+        for i = 1:nbSounds
+            allAuditorySpectrogramTemp = AuditorySpectrogramTab{i} * princomps' ;
+            allAuditorySpectrogram = [allAuditorySpectrogram allAuditorySpectrogramTemp(:)] ;
+        end
+    case 'none'
+        for i = 1:nbSounds
+            allAuditorySpectrogramTemp = AuditorySpectrogramTab{i} / max(max(AuditorySpectrogramTab{i})) ;
+            allAuditorySpectrogram = [allAuditorySpectrogram allAuditorySpectrogramTemp(:)] ;
+        end
+    otherwise
+        error('Not implemented') ;
 end
 
+%% optimization
 arguments.numLoops = 7500;
 arguments.initMeanSigma = 10.0;
 arguments.initVarSigma = 0.5;
