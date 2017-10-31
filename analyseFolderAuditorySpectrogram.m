@@ -60,11 +60,11 @@ MAT = zeros(nbSounds,nbSounds) ;
 allAuditorySpectrogram = [] ;
 
 for i = 1:nbSounds
-    allAuditorySpectrogramTemp = AuditorySpectrogramTab{i} / max(max(AuditorySpectrogramTab{i})) ;
+    allAuditorySpectrogramTemp = pca(AuditorySpectrogramTab{i}' / max(max(AuditorySpectrogramTab{i}))) ;
     allAuditorySpectrogram = [allAuditorySpectrogram allAuditorySpectrogramTemp(:)] ;
 end
 
-arguments.numLoops = 20000;
+arguments.numLoops = 7500;
 arguments.initMeanSigma = 10.0;
 arguments.initVarSigma = 0.5;
 [sigmas, kernel, correlations] = kernel_optim(allAuditorySpectrogram, matDis, arguments);

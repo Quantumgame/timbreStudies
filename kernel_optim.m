@@ -41,7 +41,7 @@ for loop = 1:num_loops
     std_kernel = std(kernel_v);
     
     Jn = sum((kernel_v-mean_kernel).*(target_v-mean_target)) ;
-    Jd = (no_samples-1)*std_target*std_kernel   ;
+    Jd = (no_samples-1)*std_target*std_kernel ;
     
     tic;
     
