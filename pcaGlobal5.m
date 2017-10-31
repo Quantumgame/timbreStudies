@@ -13,9 +13,17 @@ function [new_data, pc] = pcaGlobal5(data, varThresh)
 % - new_data: a n*p2 matrix of n observations (same order as data) in the
 % new space (p2 < p1)
 
+
+
 MAX_P = 100; 
 [n,p]=size(data); 
+if p>n
+    data = data';
+    [n,p]=size(data); 
+end
 MAX_P = min([MAX_P n p]); 
+
+
 
 % subtract off the mean for each dimension
 data = data - repmat(mean(data,1),n,1);
@@ -43,4 +51,3 @@ end
 
 %project data
 new_data = points(:,1:p2);
-%new_data = pc(:,1:p2);
