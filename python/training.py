@@ -14,12 +14,11 @@ def kernel_optim(input_data,
                  verbose=True):
     if(verbose): print("* training sigmas of gaussian kernels with cost '{}'".format(cost))
     ndims, ninstrus = input_data.shape[0], input_data.shape[1]
-    # print(ndims, ninstrus)
     no_samples = ninstrus * (ninstrus - 1) / 2
-    grad_corrfunc = np.zeros((ndims, 1))
     sigmas = np.abs(init_sig_mean + init_sig_var * np.random.randn(ndims, 1))
+    gradients = np.zeros((ndims, 1))
 
-    correlations = []  #np.zeros((num_loops, 1))
+    correlations = np.zeros((num_loops,))
 
     idx_triu = np.triu_indices(target_data.shape[0], k=1)
     target_v = target_data[idx_triu]
@@ -30,9 +29,8 @@ def kernel_optim(input_data,
     dkernel = np.zeros((ninstrus, ninstrus, ndims))
 
     learned_sigmas = []
-
     for loop in range(num_loops):  # 0 to nump_loops-1
-        sigmas = sigmas - grad_corrfunc * sigmas
+        sigmas = sigmas - gradients * sigmas
         for i in range(ninstrus):
             for j in range(i + 1, ninstrus):
                 kernel[i, j] = np.exp(-np.sum(
@@ -57,17 +55,14 @@ def kernel_optim(input_data,
             dJd = (no_samples - 1) / no_samples * \
                         std_target / std_kernel * \
                         np.sum(dkernel_k_v * (kernel_v - mean_kernel))
-            grad_corrfunc[k] = (Jd * dJn - Jn * dJd) / (Jd**2)
+            gradients[k] = (Jd * dJn - Jn * dJd) / (Jd**2)
         # verbose
         if (verbose):
             if ((loop + 1) % 1000 == 0):
                 print('  |_ loop num.:%d | grad=%.6f | J=%.6f' %
-                      (loop + 1, np.linalg.norm(grad_corrfunc, 2),
+                      (loop + 1, np.linalg.norm(gradients, 2),
                        correlations[loop]))
                 learned_sigmas.append(sigmas)
-                # if (log_filename != ''):
-                #     np.savetxt(log_filename+'_sigmas.txt', learned_sigmas)
-                #     np.savetxt(log_filename+'_correlation.txt', correlations)
     return correlations, learned_sigmas
 
 

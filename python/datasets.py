@@ -8,7 +8,7 @@ import utils
 import features
 
 
-def load_timbrespace_database(root_path='../dataSoundsDissim/'):
+def load_timbrespace_database(root_path='../ext/'):
     timbrespace_db = {}
     for root, dirs, files in os.walk(os.path.join(root_path, 'sounds')):
         for name in dirs:
@@ -17,11 +17,11 @@ def load_timbrespace_database(root_path='../dataSoundsDissim/'):
     return timbrespace_db
 
 
-def load_timbrespace_features(timbrespace,
-                                     representations=['strf'],
-                                     window=None,
-                                     timbrespace_db=None,
-                                     verbose=True):
+def load_timbrespace_features(timbrespace='Iverson93Whole',
+                              representations=['strf'],
+                              window=None,
+                              timbrespace_db=None,
+                              verbose=True):
     if (verbose): 
         print('* get STRF for {}'.format(timbrespace))
     
@@ -49,6 +49,8 @@ def load_timbrespace_features(timbrespace,
         for root, dirs, files in os.walk(timbrespace_db[timbrespace]['path']):
             for name in files:
                 if name.split('.')[-1] in ['aiff', 'wav']:
+                    if (verbose):
+                        print('  |_ {}'.format(name))
                     audio, fs = utils.audio_data(os.path.join(root, name))
                     strf_params.update({'fs': fs})
                     # compute each space in the list 'representations'
@@ -59,11 +61,11 @@ def load_timbrespace_features(timbrespace,
                             # windowing parameters
                             win_length_n = int(window['win_length'] * fs)
                             hop_length_n = int(window['hop_length'] * fs)
-                            num_frames = min(int((len(audio) - win_length_n) / hop_length_n), 1)
+                            num_frames = max(int((len(audio) - win_length_n) / hop_length_n), 1)
                             windowed_features = []
                             for wn in range(num_frames):
-                                start_n = wn * win_length_n
-                                end_n = wn * win_length_n + hop_length_n
+                                start_n = wn * hop_length_n
+                                end_n = start_n + win_length_n
                                 if (rs == 'strf'):
                                     windowed_features.append(
                                         features.strf(audio[start_n:end_n],

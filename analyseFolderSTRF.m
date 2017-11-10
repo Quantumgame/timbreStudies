@@ -62,7 +62,8 @@ pcaProjections = zeros(nbSounds, size(STRFTab{1},2), size(STRFTab{1},4), size(ST
 normalizationCoefs = zeros(nbSounds);
 for i = 1:nbSounds
     fprintf('PCA on sound %02i\n',i);
-    [strfProj, pcaProjections(i,:,:,:)] = PCA_STRF(abs(STRFTab{i}),nbFreq) ;
+    %[strfProj, pcaProjections(i,:,:,:)] = PCA_STRF(abs(STRFTab{i}),nbFreq) ;
+    strfProj = PCA_STRF(abs(STRFTab{i}),nbFreq) ;
     normalizationCoefs(i) = max(strfProj(:));
     strfProj = strfProj / max(strfProj(:)) ;
     allStrfProj = [allStrfProj strfProj(:)] ;
@@ -92,4 +93,4 @@ imagesc(kernel)
 % hold off;
 drawnow;
 %%
-save('optim_session1_iverson93whole.mat');
+%save('optim_session1_iverson93whole.mat');

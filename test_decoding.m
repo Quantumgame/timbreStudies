@@ -40,22 +40,22 @@ for snd = 1 : 16
     title(strcat('Sound',num2str(snd)));
 end
 
+%%
 
+% plot for each freq
+figure;
+for freqi = 1:size(strf_sndi,1)
+    subplot(1,2,1);
+    imagesc(squeeze(strf_sndi(freqi,:,:)));
+    title(sprintf('STRF (avg in time, freq %i)',freqi));
+    colorbar;
+    subplot(1,2,2);
+    imagesc(squeeze(dec_strf_proj(freqi, :, :)));
+    title(sprintf('Decoded weights (freq %i)',freqi));
+    colorbar; 
+    pause;
+end
 
-% % plot for each freq
-% figure;
-% for freqi = 1:size(strf_sndi,1)
-%     subplot(1,2,1);
-%     imagesc(squeeze(strf_sndi(freqi,:,:)));
-%     title(sprintf('STRF (avg in time, freq %i)',freqi));
-%     colorbar;
-%     subplot(1,2,2);
-%     imagesc(squeeze(dec_strf_proj(freqi, :, :)));
-%     title(sprintf('Decoded weights (freq %i)',freqi));
-%     colorbar; 
-%     pause;
-% end
-
-% plot average scale/rate decoded over frequencies
+plot average scale/rate decoded over frequencies
 
 

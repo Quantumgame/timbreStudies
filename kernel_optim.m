@@ -58,7 +58,13 @@ for loop = 1:num_loops
     
     %verbose
     if(mod(loop, 500)==0)
-        fprintf('loop=%d | grad=%.6f | J=%.6f\n', loop, norm(grad_corrfunc,2), correlations(loop));
+        fprintf('\t loop=%d | grad=%.6f | J=%.6f\n', loop, norm(grad_corrfunc,2), correlations(loop));
+        if arguments.log == 1
+            t = datetime('now') ;
+            key = sprintf('%04i%02i%02i%02i%02i%02.0f',t.Year,t.Month,t.Day,t.Hour,t.Minute,t.Second) ;
+            save(strcat('./logs/',arguments.logFilename,'_optimization_',key,'.mat'),...
+                 'loop','sigmas','kernel_v','correlations');
+        end
     end
     elapsed(loop) = toc;
 end

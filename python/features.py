@@ -198,7 +198,7 @@ def strf(wavtemp, fs, scalesVector, ratesVector, durationCut, durationRCosDecay)
                     np.arange(int(fs * durationRCosDecay)), 0,
                     int(fs * durationRCosDecay))
 
-    wavtemp = (wavtemp / 1.01) / np.max(wavtemp)
+    wavtemp = (wavtemp / 1.01) / (np.max(wavtemp) + np.finfo(float).eps)
     wavtemp = signal.resample(wavtemp, int(
         wavtemp.shape[0] / fs * new_fs))  # resample to 8000 Hz
 
