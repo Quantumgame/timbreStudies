@@ -6,6 +6,7 @@ addpath('./lib');
 addpath('./ext/') ;
 clear COCHBA ; global COCHBA ;
 load aud24;
+unix('mkdir -p logs') ;
 
 % test config
 test.soundFolder = './ext/sounds' ;
