@@ -14,7 +14,7 @@ test.audioRepres = {'spectrum', ...
                     'auditorySpectrogram', ...
                     'spectroTemporalReceptiveField'} ;
 test.projection.type = 'local' ;
-test.optimization.numLoops = 1000 ;
+test.optimization.numLoops = 100000 ;
 test.optimization.initMeanSigma = 10.0;
 test.optimization.initVarSigma = 0.5;
 

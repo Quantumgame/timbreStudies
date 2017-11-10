@@ -62,7 +62,7 @@ for loop = 1:num_loops
         if arguments.log == 1
             t = datetime('now') ;
             key = sprintf('%04i%02i%02i%02i%02i%02.0f',t.Year,t.Month,t.Day,t.Hour,t.Minute,t.Second) ;
-            save(strcat('./logs/',arguments.logFilename,'_optimization_',key,'.mat'),...
+            save(strcat('./logs/',arguments.logFilename,'_optimCorr_',key,'.mat'),...
                  'loop','sigmas','kernel_v','correlations');
         end
     end
