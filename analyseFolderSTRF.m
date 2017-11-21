@@ -75,9 +75,10 @@ end
 %end
 
 %% optimization
-arguments.numLoops = 50000;
+arguments.numLoops = 2000;
 arguments.initMeanSigma = 10.0;
 arguments.initVarSigma = 0.5;
+arguments.log = 1;
 [sigmas, kernel, correlations] = kernel_optim(allStrfProj, matDis, arguments);
 
 %%

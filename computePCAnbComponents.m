@@ -11,9 +11,6 @@ unix('mkdir -p logs') ;
 % test config
 test.soundFolder = './ext/sounds' ;
 test.audioRepres = {'spectroTemporalReceptiveField'} ;
-% test.audioRepres = {'auditorySpectrogram', ...
-%                     'spectrum', ...
-%                     'spectroTemporalReceptiveField'} ;
 test.projection.type = 'local' ;
 test.optimization.numLoops = 100000 ;
 test.optimization.initMeanSigma = 10.0;
@@ -22,6 +19,8 @@ test.optimization.initVarSigma = 0.5;
                 
 % initialize sound path
 folderContent = dir(test.soundFolder);
+nbFreq = 128; % number of frequencies
+idx = [];
 for i = 1:length(folderContent)
     
     if folderContent(i).name(1) ~= '.'
@@ -45,26 +44,34 @@ for i = 1:length(folderContent)
             end
 
             % dimension reduction
-            % TODO: proj matrix
-            projectedData = pcaProjection(data, test.audioRepres{k}, test.projection) ;
+            config = test.projection;
+            nbSounds = length(data) ;
+            projectedData = [] ;
 
-            % dissimilarity matrices
-            matDisFileName = sprintf('./ext/data/%s_dissimilarity_matrix.txt',timbreSpaceName);
-            matDis = load(matDisFileName);
+            if strcmp(test.audioRepres{k} , 'spectroTemporalReceptiveField')
+                for j = 1:nbSounds
+                    audioRep_avgT = squeeze(mean(abs(data{j}),1)) ;
+                    for iFrequency = 1:nbFreq 
+                        [pcomps, allAuditorySpectrogramTemp, latent] = pca(squeeze(audioRep_avgT(iFrequency,:,:))) ;
+                        cum_explained = cumsum(latent / sum(latent)); 
+                        where = find(cum_explained>=0.99);
+                        idx = [idx where(1)];
+                    end
+                end
 
-            % optimization
-            test.optimization.log = 1;
-            test.optimization.logFilename = strcat(timbreSpaceName,'_',test.audioRepres{k});
-            [sigmas, kernel, correlations] = kernel_optim(projectedData, matDis, test.optimization);
-            
-            % logging
-            t = datetime('now') ;
-            key = sprintf('%04i%02i%02i%02i%02i%02.0f',t.Year,t.Month,t.Day,t.Hour,t.Minute,t.Second) ;
-            save(strcat('./logs/',strcat(timbreSpaceName,'_',test.audioRepres{k}),'_data_',key,'.mat'),...
-                 'test', 'data', 'projectedData', 'matDis', 'sigmas', 'kernel', 'correlations');
+            else
+                for j = 1:nbSounds
+                    [pcomps, allAuditorySpectrogramTemp, latent] = pca(data{j}') ;
+                    cum_explained = cumsum(latent / sum(latent)); 
+                    where = find(cum_explained>=0.99);
+                    idx = [idx where(1)];
+                end
+            end 
             
         end
         
     end
+    size(idx)
 end
+
 
