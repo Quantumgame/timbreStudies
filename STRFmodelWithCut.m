@@ -9,12 +9,12 @@ function corticalRepresentation = STRFmodelWithCut(filename,scalesVector,ratesVe
       if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;
         wavtemp(end-floor(fs_wav*durationRCosDecay):end) = wavtemp(end-floor(fs_wav*durationRCosDecay):end) .* raisedCosine((0:floor(fs_wav*durationRCosDecay)),0,floor(fs_wav*durationRCosDecay))' ; 
-      
+      end
 
       %[wavtemp, fs_wav] = wavread(strcat(soundsPath, soundsList(iFile).name)) ;
       %wavtemp_44 = double(wavtemp) ./ 1.01 / max(double(wavtemp)) ;
       wavtemp = double(wavtemp) ./ 1.01 / max(double(wavtemp)) ;
-      wavtemp = resample(wavtemp, fs, fs_wav) ; % resample to 8000 Hz 
+      wavtemp = resample(wavtemp, fs, fs_wav) ; % resample to fs_wav Hz 
 
     %% Peripheral auditory model (from NSL toolbox)
     dlmwrite('wavtemp.txt', wavtemp, 'precision',16)
@@ -56,9 +56,6 @@ function corticalRepresentation = STRFmodelWithCut(filename,scalesVector,ratesVe
     
     [corticalRepresentation] = scaleRate2cortical(scaleRate, phaseScaleRate, stft, scalesVector, ratesVector, nbChOct, sr_time, nfft_scale, nfft_rate, 2) ;
 
-      else     
-          corticalRepresentation = [] ;
-      end
 end
 
   

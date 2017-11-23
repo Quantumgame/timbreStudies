@@ -9,8 +9,8 @@ load aud24;
 unix('mkdir -p logs') ;
 
 % test config
-test.soundFolder = './ext/sounds' ;
-test.audioRepres = {'spectroTemporalReceptiveField'} ;
+soundFolder = './ext/sounds' ;
+audioRepres = {'spectroTemporalReceptiveField'} ;
 % test.audioRepres = {'auditorySpectrogram', ...
 %                     'spectrum', ...
 %                     'spectroTemporalReceptiveField'} ;
@@ -22,7 +22,7 @@ test.optimization.initVarSigma = 0.5;
                 
 % initialize sound path
 folderContent = dir(test.soundFolder);
-for i = 1:length(folderContent)
+parfor i = 1:length(folderContent)
     
     if folderContent(i).name(1) ~= '.'
         timbreSpaceName = folderContent(i).name ;

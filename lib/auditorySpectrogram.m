@@ -3,7 +3,7 @@ function AuditorySpectrogramTab = auditorySpectrogram(wavtemp, fs_wav)
     % parameters
     durationCut = .3 ;
     durationRCosDecay = .05 ;
-    fs = 8000;
+    fs = 16000;
       
     if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;

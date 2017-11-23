@@ -12,7 +12,7 @@ function spectrum__ = spectrum(wavtemp, fs_wav)
 	end
 
     wavtemp = double(wavtemp) ./ 1.01 / max(double(wavtemp)) ;
-    wavtemp = resample(wavtemp, fs, fs_wav) ; % resample to 8000 Hz 
+    wavtemp = resample(wavtemp, fs, fs_wav) ; % resample to fs_wav Hz 
 
     spectrum__ = fft(wavtemp, nfft) ;
     spectrum__ = abs(spectrum__(1:end/2) / nfft) ;
