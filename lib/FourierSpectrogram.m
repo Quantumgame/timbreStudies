@@ -1,10 +1,10 @@
-function spectrum__ = spectrum(wavtemp, fs_wav)
-    
+function spectrogram__ = FourierSpectrogram(wavtemp, fs_wav, windowSize, frameStep)
+
     % parameters
     durationCut = .3 ;
     durationRCosDecay = .05 ;
-    fs = 16000;
-    nfft = 2^nextpow2(floor(durationCut * fs));
+    fs = 16000 ;
+    nfft = 2^nextpow2(floor(durationCut * fs)) ;
       
     if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;
@@ -14,7 +14,7 @@ function spectrum__ = spectrum(wavtemp, fs_wav)
     wavtemp = double(wavtemp) ./ 1.01 / max(double(wavtemp)) ;
     wavtemp = resample(wavtemp, fs, fs_wav) ; % resample to fs_wav Hz 
 
-    spectrum__ = fft(wavtemp, nfft) ;
-    spectrum__ = abs(spectrum__(1:end/2) / nfft) ;
-        
+    spectrogram__ =  ComplexSpectrogram(wavtemp, windowSize, frameStep) ;
+    spectrogram__ = abs(spectrogram__(1:end/2,:)) ;
+
 end
