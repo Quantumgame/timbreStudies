@@ -1,4 +1,4 @@
-function spectrum__ = spectrum(wavtemp, fs_wav)
+function spectrum__ = FourierSpectrum(wavtemp, fs_wav)
     
     % parameters
     durationCut = .3 ;
