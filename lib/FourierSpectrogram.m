@@ -1,4 +1,8 @@
-function spectrogram__ = FourierSpectrogram(wavtemp, fs_wav, windowSize, frameStep)
+function spectrogram__ = FourierSpectrogram(wavtemp, fs_wav)
+
+    windowSize = 2048 ; 
+    frameStep = 512 ;
+
 
     % parameters
     durationCut = .3 ;
