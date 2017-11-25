@@ -9,7 +9,7 @@ global COCHBA ;
 load aud24; % load cochlear filter coefficients
 
 % initialize sound path
-timbreSpace = 'Patil2012_A3' ;
+timbreSpace = 'grey1977' ;
 soundPath = sprintf('./ext/sounds/%s/',timbreSpace);
 ext = 'aiff' ;
 addpath(soundPath) ;

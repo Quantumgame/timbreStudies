@@ -8,7 +8,6 @@ function spectrogram__ = FourierSpectrogram(wavtemp, fs_wav)
     durationCut = .3 ;
     durationRCosDecay = .05 ;
     fs = 16000 ;
-    nfft = 2^nextpow2(floor(durationCut * fs)) ;
       
     if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;
