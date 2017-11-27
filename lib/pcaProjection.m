@@ -1,60 +1,34 @@
-function projectedData = pcaProjection(audioRepresentations, repName, config)
+function projectedData = pcaProjection(audioRepresentations, repName)
     
     nbSounds = length(audioRepresentations) ;
     projectedData = [] ;
 
-    if strcmp(repName , 'spectroTemporalReceptiveField')
+    if strcmp(repName , 'AuditorySTRF')
         nbFreq = 128; % number of frequencies
         nbComp = 6;
-        %pcaProjections = zeros(nbSounds, size(audioRepresentations{1},2), size(audioRepresentations{1},4), size(audioRepresentations{1},3));
-        %normalizationCoefs = zeros(nbSounds);
         for i = 1:nbSounds
             audioRep_avgT = squeeze(mean(abs(audioRepresentations{i}),1)) ;
-            %audioRep_avgT_PCA = pcaGlobal5(squeeze(audioRep_avgT(1,:,:)),.01) ;  
-            %nbDim = length(audioRep_avgT_PCA) ;
-            %audioRep_avgT   = squeeze(mean(abs(audioRepresentations{i}),1)) ;
-            %audioRep_avgT_PCA = zeros(nbFreq,nbDim) ;
-            %pplComponents = zeros(size(audioRep_avgT,1), size(audioRep_avgT,3), size(audioRep_avgT,2));
             for iFrequency = 1:nbFreq 
                 [pcomps, allAuditorySpectrogramTemp] = pca(squeeze(audioRep_avgT(iFrequency,:,:))) ;
                 allAuditorySpectrogramTemp = allAuditorySpectrogramTemp(:,1:nbComp);
-                %strf_soundi(iFrequency,:) = pcaGlobal5(squeeze(audioRep_avgT(iFrequency,:,:)),.01) ;
                 strf_soundi(iFrequency,:) = allAuditorySpectrogramTemp(:) ;
             end
-            %normalizationCoefs(i) = max(strf_soundi(:));
             strf_soundi = strf_soundi / max(strf_soundi(:)) ;
             projectedData = [projectedData strf_soundi(:)] ;
         end
 
-    else
-        
-        switch config.type
-            case 'local'
-                for i = 1:nbSounds
-                    [pcomps, allAuditorySpectrogramTemp] = pca(audioRepresentations{i}') ;
-                    %allAuditorySpectrogramTemp = pcaGlobal5(audioRepresentations{i}', 0.9999) ;
-                    %size(allAuditorySpectrogramTemp)
-                    allAuditorySpectrogramTemp = allAuditorySpectrogramTemp(:,1:10);
-                    projectedData = [projectedData allAuditorySpectrogramTemp(:)] ;
-                end
-            case 'global'
-                pcaArray = [] ;
-                for i = 1:nbSounds
-                    pcaArray = [pcaArray ; audioRepresentations{i}] ;
-                end
-                princomps = pca(pcaArray) ;
-                for i = 1:nbSounds
-                    allAuditorySpectrogramTemp = audioRepresentations{i} * princomps' ;
-                    projectedData = [projectedData allAuditorySpectrogramTemp(:)] ;
-                end
-            case 'none'
-                for i = 1:nbSounds
-                    allAuditorySpectrogramTemp = audioRepresentations{i} / max(max(audioRepresentations{i})) ;
-                    projectedData = [projectedData allAuditorySpectrogramTemp(:)] ;
-                end
-            otherwise
-                error('Not implemented') ;
+     elseif ((strcmp(test.audioRepres{k} , 'AuditoryMPS')) || ...
+                    (strcmp(test.audioRepres{k} , 'AuditorySpectrogram'))  || ...
+                    (strcmp(test.audioRepres{k} , 'FourierMPS'))  || ...
+                    (strcmp(test.audioRepres{k} , 'FourierSpectrogram')))
+        for i = 1:nbSounds
+            [pcomps, allAuditorySpectrogramTemp] = pca(audioRepresentations{i}') ;
+            allAuditorySpectrogramTemp = allAuditorySpectrogramTemp(:,1:10);
+            projectedData = [projectedData allAuditorySpectrogramTemp(:)] ;
         end
-        
+    else
+        for i = 1:nbSounds
+            projectedData = [projectedData audioRepresentations(:)] ;
+        end
     end 
 end

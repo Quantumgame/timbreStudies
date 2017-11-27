@@ -10,19 +10,22 @@ unix('mkdir -p logs') ;
 
 % test config
 soundFolder = './ext/sounds' ;
-audioRepres = {'spectroTemporalReceptiveField'} ;
-% test.audioRepres = {'auditorySpectrogram', ...
-%                     'spectrum', ...
-%                     'spectroTemporalReceptiveField'} ;
+test.audioRepres = {'AuditorySpectrogram', ...
+                    'AuditoryMPS', ...
+                    'AuditorySpectrum', ...
+                    'AuditorySTRF', ...
+                    'FourierMPS', ...
+                    'FourierSpectrogram', ...
+                    'FourierSpectrum'} ;
 test.projection.type = 'local' ;
-test.optimization.numLoops = 100000 ;
+test.optimization.numLoops = 1000 ;
 test.optimization.initMeanSigma = 10.0;
 test.optimization.initVarSigma = 0.5;
 
                 
 % initialize sound path
 folderContent = dir(test.soundFolder);
-parfor i = 1:length(folderContent)
+for i = 1:length(folderContent)
     
     if folderContent(i).name(1) ~= '.'
         timbreSpaceName = folderContent(i).name ;
