@@ -10,7 +10,7 @@ unix('mkdir -p logs') ;
 
 % test config
 test.soundFolder = './ext/sounds' ;
-test.audioRepres = {'spectroTemporalReceptiveField'} ;
+test.audioRepres = {'AuditoryMPS'} ;
 test.projection.type = 'local' ;
 test.optimization.numLoops = 100000 ;
 test.optimization.initMeanSigma = 10.0;
@@ -41,6 +41,11 @@ for i = 1:length(folderContent)
             for s = 1:nbSounds
                 [audioData, fs] = audioread(soundsList(s).name) ;
                 data{s} = repProcess(audioData, fs) ;
+                fprintf('Snd %i | size ', s);
+                for kk = 1:length(size(audioData))
+                    fprintf('%i ', size(audioData,kk));
+                end
+                fprintf('\n');
             end
 
             % dimension reduction
@@ -48,7 +53,7 @@ for i = 1:length(folderContent)
             nbSounds = length(data) ;
             projectedData = [] ;
 
-            if strcmp(test.audioRepres{k} , 'spectroTemporalReceptiveField')
+            if strcmp(test.audioRepres{k} , 'AuditorySTRF')
                 for j = 1:nbSounds
                     audioRep_avgT = squeeze(mean(abs(data{j}),1)) ;
                     for iFrequency = 1:nbFreq 
@@ -59,7 +64,10 @@ for i = 1:length(folderContent)
                     end
                 end
 
-            else
+            elseif ((strcmp(test.audioRepres{k} , 'AuditoryMPS')) || ...
+                    (strcmp(test.audioRepres{k} , 'AuditorySpectrogram'))  || ...
+                    (strcmp(test.audioRepres{k} , 'FourierMPS'))  || ...
+                    (strcmp(test.audioRepres{k} , 'FourierSpectrogram')))
                 for j = 1:nbSounds
                     [pcomps, allAuditorySpectrogramTemp, latent] = pca(data{j}') ;
                     cum_explained = cumsum(latent / sum(latent)); 
@@ -71,7 +79,6 @@ for i = 1:length(folderContent)
         end
         
     end
-    size(idx)
 end
 
 

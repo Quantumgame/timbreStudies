@@ -1,4 +1,4 @@
-function AuditorySpectrogramTab = auditorySpectrogram(wavtemp, fs_wav)
+function AuditorySpectrogramTab = AuditorySpectrogram(wavtemp, fs_wav)
     
     % parameters
     durationCut = .3 ;
