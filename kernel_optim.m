@@ -15,7 +15,7 @@ num_loops = numLoops;
 [ndims,ninstrus] = size(x);
 
 no_samples = ninstrus*(ninstrus-1)/2;
-
+ndims
 grad_corrfunc = zeros(ndims,1);
 sigmas = initMeanSigma + initVarSigma * randn(ndims,1) ;
 

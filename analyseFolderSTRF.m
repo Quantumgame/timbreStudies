@@ -9,7 +9,7 @@ global COCHBA ;
 load aud24; % load cochlear filter coefficients
 
 % initialize sound path
-timbreSpace = 'McAdams1995' ;
+timbreSpace = 'Patil2012_A3' 
 soundPath = sprintf('./ext/sounds/%s/',timbreSpace);
 ext = 'aiff' ;
 addpath(soundPath) ;
@@ -80,7 +80,8 @@ arguments.logFilename = 'Test' ;
 arguments.initMeanSigma = 10.0;
 arguments.initVarSigma = 0.5;
 arguments.log = 0;
-[sigmas, kernel, correlations] = kernel_optim(allStrfProj, matDis, arguments);
+%[sigmas, kernel, correlations] = kernel_optim(allStrfProj, matDis, arguments);
+[sigmas, kernel, correlations] = kernel_optim(allStrfProj, matDis, arguments.numLoops,arguments.initMeanSigma,arguments.initVarSigma,0,arguments.logFilename); 
 
 %%
 subplot(1,3,1)
@@ -95,4 +96,4 @@ imagesc(kernel)
 % hold off;
 drawnow;
 %%
-%save('optim_session1_iverson93whole.mat');
+save(strcat(timbreSpace,'.mat'));
