@@ -5,7 +5,7 @@ function repres = AuditoryMPS(wavtemp, fs_wav)
     durationRCosDecay = .05 ;
     scalesVector = [0.25 0.35 0.50 0.71 1.0 1.41 2.00 2.83 4.00 5.66 8.00] ;
     ratesVector  = [-128 -90.5 -64 -45.3 -32 -22 -16 -11.3 -8 -5.8 -4 2 1 .5 .5 1 2 4.0 5.8 8.0 11.3 16.0 22.6 32.0 45.3 64.0 90.5 128.0] ;
-    fs = 16000;          % TOOD: why not 8000 ??
+    fs = 16000 ;          % TOOD: why not 8000 ??
         
     if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;

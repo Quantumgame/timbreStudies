@@ -1,4 +1,4 @@
-function projectedData = pcaProjection(audioRepresentations, repName)
+function [projectedData, pcomps] = pcaProjection(audioRepresentations, repName)
     
     nbSounds = length(audioRepresentations) ;
     projectedData = [] ;
@@ -6,10 +6,11 @@ function projectedData = pcaProjection(audioRepresentations, repName)
     if strcmp(repName , 'AuditorySTRF')
         nbFreq = 128; % number of frequencies
         nbComp = 6;
+        pcomps = cell(nbSounds, nbFreq) ;
         for i = 1:nbSounds
             audioRep_avgT = squeeze(mean(abs(audioRepresentations{i}),1)) ;
             for iFrequency = 1:nbFreq 
-                [pcomps, allAuditorySpectrogramTemp] = pca(squeeze(audioRep_avgT(iFrequency,:,:))) ;
+                [pcomps{i,iFrequency}, allAuditorySpectrogramTemp] = pca(squeeze(audioRep_avgT(iFrequency,:,:))) ;
                 allAuditorySpectrogramTemp = allAuditorySpectrogramTemp(:,1:nbComp);
                 strf_soundi(iFrequency,:) = allAuditorySpectrogramTemp(:) ;
             end
@@ -17,18 +18,21 @@ function projectedData = pcaProjection(audioRepresentations, repName)
             projectedData = [projectedData strf_soundi(:)] ;
         end
 
-     elseif ((strcmp(test.audioRepres{k} , 'AuditoryMPS')) || ...
-                    (strcmp(test.audioRepres{k} , 'AuditorySpectrogram'))  || ...
-                    (strcmp(test.audioRepres{k} , 'FourierMPS'))  || ...
-                    (strcmp(test.audioRepres{k} , 'FourierSpectrogram')))
+     elseif((strcmp(repName , 'AuditoryMPS')) || ...
+            (strcmp(repName , 'AuditorySpectrogram'))  || ...
+            (strcmp(repName , 'FourierMPS'))  || ...
+            (strcmp(repName , 'FourierSpectrogram')))
+        nbComp = 10 ;
+        pcomps = cell(nbSounds) ;
         for i = 1:nbSounds
-            [pcomps, allAuditorySpectrogramTemp] = pca(audioRepresentations{i}') ;
-            allAuditorySpectrogramTemp = allAuditorySpectrogramTemp(:,1:10);
+            [pcomps{i}, allAuditorySpectrogramTemp] = pca(audioRepresentations{i}') ;
+            allAuditorySpectrogramTemp = allAuditorySpectrogramTemp(:,1:nbComp);
             projectedData = [projectedData allAuditorySpectrogramTemp(:)] ;
         end
     else
+        pcomps = {};
         for i = 1:nbSounds
-            projectedData = [projectedData audioRepresentations(:)] ;
+            projectedData = [projectedData audioRepresentations{i}(:)] ;
         end
     end 
 end

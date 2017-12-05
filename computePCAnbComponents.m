@@ -10,7 +10,7 @@ unix('mkdir -p logs') ;
 
 % test config
 test.soundFolder = './ext/sounds' ;
-test.audioRepres = {'AuditoryMPS'} ;
+test.audioRepres = {'FourierMPS'} ;
 test.projection.type = 'local' ;
 test.optimization.numLoops = 100000 ;
 test.optimization.initMeanSigma = 10.0;
