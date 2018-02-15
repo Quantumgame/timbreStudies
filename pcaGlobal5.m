@@ -14,16 +14,13 @@ function [new_data, pc] = pcaGlobal5(data, varThresh)
 % new space (p2 < p1)
 
 
-
-MAX_P = 100; 
+MAX_P = 200; 
 [n,p]=size(data); 
 if p>n
     data = data';
     [n,p]=size(data); 
 end
 MAX_P = min([MAX_P n p]); 
-
-
 
 % subtract off the mean for each dimension
 data = data - repmat(mean(data,1),n,1);
@@ -35,6 +32,7 @@ Y = data / sqrt(n-1);
 % project the original data
 % points = transpose(pc' * data');
 points = data * pc';
+
 % calculate the variances
 S = diag(S);
 variances = S .* S;

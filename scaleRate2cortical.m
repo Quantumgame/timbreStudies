@@ -20,8 +20,6 @@
 %                           (time, frequency, scale, rate)
 %  
 
-
-
 function [corticalRepresentation] = scaleRate2cortical(scaleRate, phaseScaleRate, stft, scalesVector, ratesVector, nbChOct, sr_time, nfft_scale, nfft_rate, KIND)
 
 

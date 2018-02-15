@@ -3,9 +3,11 @@ clc ;
 
 % aff ext functions
 addpath(genpath('./ext/')) ;
+addpath(genpath('./lib/')) ;
+
 
 % initialize sound path
-timbreSpace = 'Iverson1993Whole' ;
+timbreSpace = 'Grey1977' ;
 soundPath = sprintf('./ext/sounds/%s/',timbreSpace);
 ext = 'aiff' ;
 addpath(soundPath) ;
@@ -26,7 +28,7 @@ spectrogramTab = struct([]) ;
 for iFile = 1:nbSounds
     disp(strcat(num2str(iFile) , '...')) ;
     soundsList(iFile).name
-    spectrogramTab{iFile} = SpectrogrammodelWithCut(soundsList(iFile).name,windowSize,frameStep,durationCut,durationRCosDecay) ;
+    spectrogramTab{iFile} = FourierSpectrogram(soundsList(iFile).name,durationCut,durationRCosDecay) ;
 end
 
 
@@ -62,11 +64,13 @@ MAT = zeros(nbSounds,nbSounds) ;
 allSpectrogram = [] ;
 
 for i = 1:nbSounds
-    allSpectrogramTemp = pca(spectrogramTab{i} / max(max(spectrogramTab{i}))) ;
+    allSpectrogramTemp = pcaGlobal5(spectrogramTab{i} / max(max(spectrogramTab{i})),.01) ;
     size(allSpectrogramTemp);
     allSpectrogram = [allSpectrogram allSpectrogramTemp(:)] ;
 end
 
+arguments.realtimeLog = 0 ;
+arguments.logFilename = 'Test' ;
 arguments.numLoops = 50000;
 arguments.initMeanSigma = 10.0;
 arguments.initVarSigma = 0.5;

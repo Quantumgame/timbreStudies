@@ -4,9 +4,9 @@ clc ;
 % load NSL Toolbox functions (http://www.isr.umd.edu/Labs/NSL/Software.htm)
 addpath(genpath('./NSLfunctions/')); 
 addpath('./ext/') ;
-
+addpath(genpath('./lib/')) ;
 % initialize sound path
-timbreSpace = 'Iverson1993Whole' ;
+timbreSpace = 'Patil2012_GD4' ;
 soundPath = sprintf('./ext/sounds/%s/',timbreSpace);
 ext = 'aiff' ;
 addpath(soundPath) ;
@@ -15,17 +15,19 @@ nbSounds = length(soundsList) ;
 
 % audio parameters
 fs = 44100 ;
+windowSize = 512 ;
+frameStep = 128 ;
 
 % waveform cut settings
 durationCut = .3 ;
 durationRCosDecay = .05 ;
 
 % compute spectrum of all files
-SPECTRUMTab = struct([]) ;
+MPSTab = struct([]) ;
 for iFile = 1:nbSounds
     disp(strcat(num2str(iFile) , '...')) ;
     filename = soundsList(iFile).name
-    SPECTRUMTab{iFile} = abs(SPECTRUMmodelWithCut(filename, durationCut, durationRCosDecay)) ;
+    MPSTab{iFile} = abs(FourierMPS(filename,durationCut,durationRCosDecay)) ;
 end
 
 %%
@@ -56,18 +58,20 @@ MAT = zeros(nbSounds,nbSounds) ;
 %end
 
 %% optimization
-allSpectrum = [] ;
+allMPS = [] ;
 
 for i = 1:nbSounds
-    allSpectrumTemp = SPECTRUMTab{i} / max(SPECTRUMTab{i}) ;
-    allSpectrum = [allSpectrum allSpectrumTemp] ;
+    allMPSTemp = MPSTab{i} / max(MPSTab{i}) ;
+    allMPS = [allMPS allMPSTemp] ;
 
 end
 
-arguments.numLoops = 40000 ;
-arguments.initMeanSigma = 10.0 ;
-arguments.initVarSigma = 0.5 ;
-[sigmas, kernel, correlations] = kernel_optim(allSpectrum, matDis, arguments) ;
+arguments.realtimeLog = 0 ;
+arguments.logFilename = 'Test' ;
+arguments.numLoops = 200000;
+arguments.initMeanSigma = 10.0;
+arguments.initVarSigma = 0.5;
+[sigmas, kernel, correlations] = kernel_optim(allMPS, matDis, arguments) ;
 
 
 %%

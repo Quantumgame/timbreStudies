@@ -1,7 +1,7 @@
 clc; clear all; close all;
 
 %% load iverson93whole analysis (pca, kernels, etc.)
-load 'optim_session1_iverson93whole' ;
+%load './ext/data/optmizedData/optim_AuditorySTRF_Patil2012_A3.mat' ;
 
 %% decode sigmas and plot together with strfs
 

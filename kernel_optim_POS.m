@@ -31,7 +31,7 @@ tic;
 
 for loop = 1:num_loops
     
-    sigmas = sigmas - grad_corrfunc .* sigmas ;
+    sigmas = sigmas + grad_corrfunc .* sigmas ;
     
     for i=1:ninstrus
         for j=i+1:ninstrus
@@ -56,7 +56,7 @@ for loop = 1:num_loops
     end
     
     
-    correlations(loop) = Jn/Jd ;   
+    correlations(loop) = Jn/Jd ;
     
     %verbose
     if(mod(loop, 500)==0)

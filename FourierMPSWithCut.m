@@ -1,12 +1,8 @@
-function repres = FourierMPS(wavtemp, fs_wav)
-
-    windowSize = 2048 ; 
-    frameStep = 512 ;
+function mps = FourierMPSWithCut(filename,windowSize,frameStep,durationCut,durationRCosDecay)
     
     % parameters
-    durationCut = .3 ;
-    durationRCosDecay = .05 ;
-    fs = 16000 ;
+    fs = 16000;          % sample rate
+    [wavtemp, fs_wav] = audioread(filename) ;    
     
     if fs_wav ~= fs
         wavtemp = resample(wavtemp, fs, fs_wav) ; % resample 
@@ -41,7 +37,7 @@ function repres = FourierMPS(wavtemp, fs_wav)
         Y(:, m) = R1;
     end
 
-    repres = abs(Y(:,1:end/2)) ;
+    mps = abs(Y(:,1:end/2)) ;
     %scaleRateAngle = angle(Y) ;
 
 end
