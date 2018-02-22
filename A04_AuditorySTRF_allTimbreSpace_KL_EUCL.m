@@ -4,11 +4,12 @@ clc ;
 timbreSpaceNames  = dir('./ext/sounds/') ;
 nbSpaces = length(timbreSpaceNames)-3 ;
 
-arguments.numLoops = 200; % number of iterations
-
-%for iFolder = 4:nbSpaces+3
-for iFolder = 6
-clearvars -except arguments iFolder nbSpaces timbreSpaceNames
+%arguments.numLoops = 200; % number of iterations
+correlationsPCA = zeros(1,12) ;
+correlationsNonPCA = zeros(1,12) ;
+for iFolder = 4:nbSpaces+3
+iFolder
+clearvars -except arguments iFolder nbSpaces timbreSpaceNames correlationsPCA correlationsNonPCA
 
 % load NSL Toolbox functions (http://www.isr.umd.edu/Labs/NSL/Software.htm)
 addpath(genpath('./NSLfunctions/')); 
@@ -49,7 +50,7 @@ STRFTab = struct([]) ;
 for iFile = 1:nbSounds
     disp(strcat(num2str(iFile) , '...')) ;
     soundsList(iFile).name
-    STRFTab{iFile} = A04_AuditorySTRF(soundsList(iFile).name, durationCut, durationRCosDecay) ;
+    STRFTab{iFile} = A04_AuditorySTRF_250hz(soundsList(iFile).name, durationCut, durationRCosDecay) ;
 end
 
 %%
@@ -64,6 +65,7 @@ MAT = zeros(nbSounds,nbSounds) ;
 %% pca 
 nbFreq = 128; % number of frequencies
 allStrfProj = [] ;
+allStrfNonProj = [] ;
 pcaProjections = zeros(nbSounds, size(STRFTab{1},2), size(STRFTab{1},4), size(STRFTab{1},3));
 normalizationCoefs = zeros(nbSounds);
 for i = 1:nbSounds
@@ -72,15 +74,20 @@ for i = 1:nbSounds
     normalizationCoefs(i) = max(strfProj(:));
     strfProj = strfProj / max(strfProj(:)) ;
     allStrfProj = [allStrfProj strfProj(:)] ;
+    allStrfNonProj = [allStrfNonProj STRFTab{i}(:)];
 end
+
 
 %% distance
 
 tic;
-[correlations] = corrDist(allStrfProj, matDis, arguments); 
+%[correlationsPCA(iFolder-3) ] = corrDist(allStrfProj,matDis,'kl') ;
+[correlationsNonPCA(iFolder-3)] = corrDist(allStrfNonProj,matDis,'kl') ;
+
 duration = toc;
 
-save(strcat('optim_STRFSpectrum_',timbreSpace,'.mat'));
 
 end
 
+correlationsPCA
+correlationsNonPCA

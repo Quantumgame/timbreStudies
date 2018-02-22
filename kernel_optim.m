@@ -11,7 +11,6 @@ function [sigmas, kernel_v, correlations, seed] = kernel_optim(x, target, argume
 
 num_loops = arguments.numLoops;
 
-
 [ndims,ninstrus] = size(x);
 
 no_samples = ninstrus*(ninstrus-1)/2;

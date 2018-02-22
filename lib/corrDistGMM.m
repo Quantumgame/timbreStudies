@@ -1,4 +1,4 @@
-function [correlations, matDistObj] = corrDist(x, matDis, typeOfDistance)
+function [correlations, matDistObj] = corrDistGMM(x, matDis, typeOfDistance)
 
 [ndims,ninstrus] = size(x);
 
