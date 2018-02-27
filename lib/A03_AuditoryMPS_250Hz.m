@@ -1,4 +1,4 @@
-function repres = A03_AuditoryMPS(filename,durationCut,durationRCosDecay)
+function repres = A03_AuditoryMPS_250Hz(filename,durationCut,durationRCosDecay)
     % parameters
 
     
