@@ -19,6 +19,7 @@ function STRF_repres = F04_FourierSTRF(filename,durationCut,durationRCosDecay)
     maxScale = windowSize / (fs * 1e-3) / 2 ; % max scale value
 
     [wavtemp, fs_wav] = audioread(filename) ;
+     wavtemp = padarray(wavtemp,16000,'post');
       
     if length(wavtemp) > floor(durationCut*fs_wav)
        wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;

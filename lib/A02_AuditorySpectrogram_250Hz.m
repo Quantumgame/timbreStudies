@@ -1,9 +1,10 @@
-function AuditorySpectrogramTab = A02_AuditorySpectrogram(filename,durationCut,durationRCosDecay)
+function AuditorySpectrogramTab = A02_AuditorySpectrogram_250Hz(filename,durationCut,durationRCosDecay)
     
       %% loading a wav file (uncomment to use)
       fs = 16000;          % sample rate
       [wavtemp, fs_wav] = audioread(filename) ;
-      
+      wavtemp = padarray(wavtemp,16000,'post');
+
       if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;
         wavtemp(end-floor(fs_wav*durationRCosDecay):end) = wavtemp(end-floor(fs_wav*durationRCosDecay):end) .* raisedCosine((0:floor(fs_wav*durationRCosDecay)),0,floor(fs_wav*durationRCosDecay))' ; 

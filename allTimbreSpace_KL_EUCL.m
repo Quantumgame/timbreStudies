@@ -5,14 +5,14 @@ timbreSpaceNames  = dir('./ext/sounds/') ;
 nbSpaces = length(timbreSpaceNames)-3 ;
 
 %arguments.numLoops = 200; % number of iterations
-correlationsPCA = zeros(1,12) ;
-correlationsNonPCA = zeros(1,12) ;
+correlationsNonPCAKL = zeros(1,12) ;
+correlationsNonPCAEucl = zeros(1,12) ;
 
-representation = 'A_MPS' ;
+representation = 'F_STRF' ;
 
 for iFolder = 4:nbSpaces+3   
 iFolder
-clearvars -except arguments iFolder nbSpaces timbreSpaceNames correlationsPCA correlationsNonPCA representation
+clearvars -except arguments iFolder nbSpaces timbreSpaceNames correlationsPCA correlationsNonPCAEucl representation correlationsNonPCAKL
 
 % load NSL Toolbox functions (http://www.isr.umd.edu/Labs/NSL/Software.htm)
 addpath(genpath('./NSLfunctions/')); 
@@ -56,13 +56,21 @@ for iFile = 1:nbSounds
     
     switch representation
         case 'A_Spectrum'
-            Tab{iFile} = A01_AuditorySpectrum_250hz(soundsList(iFile).name, durationCut, durationRCosDecay) ;        
+            Tab{iFile} = A01_AuditorySpectrum_250Hz(soundsList(iFile).name, durationCut, durationRCosDecay) ;        
         case 'A_Spectrogram'
-            Tab{iFile} = A02_AuditorySpectrogram_250hz(soundsList(iFile).name, durationCut, durationRCosDecay) ;
+            Tab{iFile} = A02_AuditorySpectrogram_250Hz(soundsList(iFile).name, durationCut, durationRCosDecay) ;
         case 'A_MPS'
             Tab{iFile} = A03_AuditoryMPS_250Hz(soundsList(iFile).name, durationCut, durationRCosDecay) ;
         case 'A_STRF'
             Tab{iFile} = A04_AuditorySTRF_250hz(soundsList(iFile).name, durationCut, durationRCosDecay) ;
+        case 'F_Spectrum'
+            Tab{iFile} = F01_FourierSpectrum(soundsList(iFile).name, durationCut, durationRCosDecay) ;        
+        case 'F_Spectrogram'
+            Tab{iFile} = F02_FourierSpectrogram(soundsList(iFile).name, durationCut, durationRCosDecay) ;
+        case 'F_MPS'
+            Tab{iFile} = F03_FourierMPS(soundsList(iFile).name, durationCut, durationRCosDecay) ;
+        case 'F_STRF'
+            Tab{iFile} = F04_FourierSTRF(soundsList(iFile).name, durationCut, durationRCosDecay) ;            
     end
         
 end
@@ -84,11 +92,16 @@ end
 %% distance
 
 tic;
-[correlationsNonPCA(iFolder-3)] = corrDist(allStrfNonProj,matDis,'euclidean') ;
+1
+[correlationsNonPCAEucl(iFolder-3)] = corrDist(allStrfNonProj,matDis,'euclidean') ;
+2
+[correlationsNonPCAKL(iFolder-3)] = corrDist(allStrfNonProj,matDis,'kl') ;
 
-duration = toc;
+duration = toc
 
 end
 
-correlationsPCA
-correlationsNonPCA
+%%
+
+[correlationsNonPCAKL;
+correlationsNonPCAEucl]

@@ -1,8 +1,9 @@
-function AuditorySpectrum_ = A01_AuditorySpectrum(filename,durationCut,durationRCosDecay)
+function AuditorySpectrum_ = A01_AuditorySpectrum_250Hz(filename,durationCut,durationRCosDecay)
     
     %% loading a wav file (uncomment to use)
       fs = 16000;          % sample rate
       [wavtemp, fs_wav] = audioread(filename) ;
+       wavtemp = padarray(wavtemp,16000,'post');
       
       if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;

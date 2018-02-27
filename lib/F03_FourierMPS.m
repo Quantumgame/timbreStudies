@@ -6,6 +6,7 @@ function repres = F03_FourierMPS(filename,durationCut,durationRCosDecay)
       windowSize = 743 ;
       frameStep = 186 ;        
       [wavtemp, fs_wav] = audioread(filename) ;
+       wavtemp = padarray(wavtemp,16000,'post');
       
       if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;

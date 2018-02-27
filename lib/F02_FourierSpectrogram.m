@@ -7,6 +7,7 @@ function spectrogram__ = F02_FourierSpectrogram(filename,durationCut,durationRCo
     frameStep = 186 ;    
     fs = 16000 ;          % sample rate
     [wavtemp, fs_wav] = audioread(filename) ;
+     wavtemp = padarray(wavtemp,16000,'post');
       
       if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;

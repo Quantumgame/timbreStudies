@@ -7,7 +7,8 @@ function repres = A03_AuditoryMPS_250Hz(filename,durationCut,durationRCosDecay)
     ratesVector = [-128 -90.5 -64 -45.3 -32 -22.6 -16 -11.3 -8 -5.70 -4 4 5.70 8 11.3 16 22.6 32 45.3 64 90.5 128] ;
       fs = 16000;          % sample rate
       [wavtemp, fs_wav] = audioread(filename) ;
-      
+       wavtemp = padarray(wavtemp,16000,'post');
+
     if length(wavtemp) > floor(durationCut*fs_wav)
         wavtemp = wavtemp(1:floor(durationCut*fs_wav)) ;
         wavtemp(end-floor(fs_wav*durationRCosDecay):end) = wavtemp(end-floor(fs_wav*durationRCosDecay):end) .* raisedCosine((0:floor(fs_wav*durationRCosDecay)),0,floor(fs_wav*durationRCosDecay))' ; 
