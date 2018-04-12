@@ -11,7 +11,7 @@ global COCHBA ;
 load aud24; % load cochlear filter coefficients
 
 % initialize sound path
-timbreSpace = 'Iverson1993Whole' 
+timbreSpace = 'grey1978' 
 soundPath = sprintf('./ext/sounds/%s/',timbreSpace);
 ext = 'aiff' ;
 addpath(soundPath) ;
@@ -77,14 +77,17 @@ end
 %end
 
 %% optimization
-arguments.numLoops = 200000;
-arguments.logFilename = 'Test' ;
-arguments.initMeanSigma = 10.0;
+arguments.numLoops = 1600;
+arguments.initMeanSigma = 20.0;
 arguments.initVarSigma = 0.5;
 arguments.realtimeLog = 0 ;
-arguments.log = 0;
-%[sigmas, kernel, correlations] = kernel_optim(allStrfProj, matDis, arguments);
-[sigmas, kernel, correlations] = kernel_optim(allStrfProj, matDis, arguments); 
+arguments.logFolderName = 'Test' ;
+arguments.logFileName = timbreSpace;
+arguments.log = 1;
+
+%[sigmas, kernel, correlations] = kernel_optim(allStrfProj, matDis, arguments); 
+%[sigmas, kernel, correlations] = optimizeCorrelation(allStrfProj, matDis, arguments); 
+[sigmas, correlation] = optimizeCorrelationSA(allStrfProj, matDis, arguments); 
 
 %%
 subplot(1,3,1)
@@ -99,4 +102,22 @@ imagesc(kernel)
 % hold off;
 drawnow;
 %%
-save(strcat(timbreSpace,'.mat'));
+%save(strcat(timbreSpace,'.mat'));
+
+%%
+clear all;
+load('Test/grey1978_20180216165555_oldOptim.mat');
+oldOptimCorrs = correlations;
+load('Test/grey1978_20180216164242_optim.mat');
+optimCorrs = correlations;
+
+hold on;
+plot(oldOptimCorrs, 'k');
+plot(optimCorrs, '--r');
+hold off;
+
+%%
+hold on;
+plot(sigmas, 'k');
+sa = load('sigmas_sa.mat');
+plot(sa.sigmas, '--r');

@@ -12,13 +12,17 @@ def kernel_optim(input_data,
                  init_sig_var=0.5,
                  num_loops=10000,
                  verbose=True):
-    if(verbose): print("* training sigmas of gaussian kernels with cost '{}'".format(cost))
+
+    if (verbose):
+        print("* training sigmas of gaussian kernels with cost '{}'".format(
+            cost))
+
     ndims, ninstrus = input_data.shape[0], input_data.shape[1]
     no_samples = ninstrus * (ninstrus - 1) / 2
     sigmas = np.abs(init_sig_mean + init_sig_var * np.random.randn(ndims, 1))
     gradients = np.zeros((ndims, 1))
 
-    correlations = np.zeros((num_loops,))
+    correlations = []  # = np.zeros((num_loops, ))
 
     idx_triu = np.triu_indices(target_data.shape[0], k=1)
     target_v = target_data[idx_triu]
@@ -59,9 +63,9 @@ def kernel_optim(input_data,
         # verbose
         if (verbose):
             if ((loop + 1) % 1000 == 0):
-                print('  |_ loop num.:%d | grad=%.6f | J=%.6f' %
-                      (loop + 1, np.linalg.norm(gradients, 2),
-                       correlations[loop]))
+                print('  |_ loop num.: {}/{} | grad={:.6f} | J={:.6f}'.format(
+                    loop + 1, num_loops,
+                    np.linalg.norm(gradients, 2), correlations[loop]))
                 learned_sigmas.append(sigmas)
     return correlations, learned_sigmas
 

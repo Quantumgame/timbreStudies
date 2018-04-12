@@ -35,12 +35,10 @@ function repres = A04_AuditorySTRF(filename,durationCut,durationRCosDecay)
     nfft_fac = 2 ; % multiplicative factor for nfft_scale and nfft_rate
 
     % 1) Spectrogram => Scales vs. Time
-
     nfft_scale = nfft_fac * 2^nextpow2(length(stft(1,:))) ;
     [modulationScale, phaseScale] = spec2scaletime(stft, nbChannels, nbChOct, sr_time, nfft_scale) ;
 
     % 2) Scales vs. Time => Scales vs. Rates
-
     nfft_rate = nfft_fac * 2^nextpow2(length(modulationScale(:,1))) ;
     [scaleRate, phaseScaleRate] = scaletime2scalerate(modulationScale .* exp(1i * phaseScale), nbChannels, nbChOct, sr_time, nfft_rate, nfft_scale) ;
 

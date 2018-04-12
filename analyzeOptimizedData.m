@@ -2,45 +2,56 @@ clear all;
 clc ;
 
 % initialize file path
-optimizedDataFolder  = './ext/data/optmizedData/' ;
-representationType = {'AuditorySpectrum','AuditorySpectrogram', 'AuditoryMPS',...
-                      'AuditorySTRF','FourierSpectrum','FourierSpectrogram',...
-                      'FourierMPS'} ;
+optimizedDataFolder  = './ext/optimizedData/' ;
+addpath(optimizedDataFolder) ;
+
+representationType = {'AuditorySpectrum','AuditorySpectrogram', 'AuditoryMPS', 'AuditorySTRF', ...
+                      'FourierSpectrum', 'FourierSpectrogram',  'FourierMPS'} ;
 
 %representationType = {'AuditorySpectrogram_250Hz','AuditorySpectrum_250Hz','AuditorySTRF_250'} ;
                   
-addpath(optimizedDataFolder) ;
-
 %results variables
-correlationTab = zeros(length(representationType),2,12) ;
+corrs = zeros(length(representationType), 12) ;
+pvals = zeros(length(representationType), 12) ;
 fileNameOnly = [] ;
-
-for iRepresentation = 1:length(representationType)
-    fileList = dir(strcat(optimizedDataFolder,'optim_',representationType{iRepresentation}, '_*.mat')) ;
+h = figure;
+nReps = length(representationType);
+for ri = 1:nReps
+    fileList = dir(strcat(optimizedDataFolder,'optim_',representationType{ri}, '_*.mat')) ;
     nbFiles = length(fileList) ;
     fileNameOnly = [] ;
-    disp(representationType{iRepresentation}) ;
-    for iData = 1:nbFiles
-       disp(iData) ;
-       tempFileName = strsplit(fileList(iData).name,{'_','.mat'}) ;
+    disp(representationType{ri}) ;
+    for fi = 1:nbFiles
+       tempFileName = strsplit(fileList(fi).name,{'_','.mat'}) ;
        fileNameOnly = [fileNameOnly tempFileName(3)] ;
-       load(fileList(iData).name) ;
-       [correlationTab(iRepresentation,1,iData), correlationTab(iRepresentation,2,iData)] = ...
-                        corr(meanMatDis,kernel) ;
-                    
-    %    tempFileName(3)
-    %    correlationTab(1,iData)
-    %    pause
-
+       load(fileList(fi).name) ;
+       [corrs(ri,fi), pvals(ri,fi)] = corr(meanMatDis,kernel) ;
+       
+       subplot(nReps, nbFiles, (ri-1)*nbFiles+fi)
+       plot(correlations);
+       if (ri-1)*nbFiles+fi <= nbFiles
+           title(fileNameOnly(end));
+       end
+       if mod((ri-1)*nbFiles+fi-1, nbFiles)==0
+           ylabel(representationType{ri});
+       end
+       set(gca,'fontsize', 4);
+       set(gca,'Xticklabel',[]);
+       %subplot(nReps, nbFiles, (ri-1)*nbFiles+fi)
+       %plot(sigmas);
+       
+       %title(strcat(representationType{ri},'_',fileNameOnly(end)));
     end
 end
 
+saveas(h, 'all_correlations.eps');
+%pause;
 %fileNameOnly = [fileNameOnly 'Patil2012' 'Grey1977' 'Grey1978'] ;
 
 %% plot all timbre spaces
 
 subplot(121)
-plot(squeeze(correlationTab(:,1,:))')
+plot(corrs(:,:)')
 xticks(linspace(1,nbFiles,nbFiles))
 xticklabels(fileNameOnly)
 xtickangle(45)

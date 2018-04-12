@@ -1,4 +1,5 @@
-function [sigmas, kernel_v, correlations, seed] = kernel_optim(x, target, arguments)
+function [sigmas, kernel_v, correlations, seed] = kernel_optim(x, target, args)
+%%%     kernel_optim
 %%%     
 %%%     x : features
 %%%     target : dissimilarity matrix
@@ -9,7 +10,11 @@ function [sigmas, kernel_v, correlations, seed] = kernel_optim(x, target, argume
 %%%         Music in our ears: The biological bases of musical timbre perception
 %%%         Public Library of Science Computational Biology, Vol. 8(11), Nov 2012.
 
-num_loops = arguments.numLoops;
+t = datetime('now') ;
+key = sprintf('%04i%02i%02i%02i%02i%02.0f',t.Year,t.Month,t.Day,t.Hour,t.Minute,t.Second);
+
+
+num_loops = args.numLoops;
 
 [ndims,ninstrus] = size(x);
 
@@ -17,8 +22,8 @@ no_samples = ninstrus*(ninstrus-1)/2;
 grad_corrfunc = zeros(ndims,1);
 
 % init sigmas values
-sigmas = arguments.initMeanSigma + arguments.initVarSigma * randn(ndims,1) ;
-seed = sigmas;
+%sigmas = arguments.initMeanSigma + arguments.initVarSigma * randn(ndims,1) ;
+load(strcat(args.logFolderName,'/seed.mat'));
 
 correlations = zeros(num_loops,1);
 
@@ -30,12 +35,12 @@ tic;
 
 for loop = 1:num_loops
     
-    sigmas = sigmas - grad_corrfunc .* sigmas ;
-    
     for i=1:ninstrus
         for j=i+1:ninstrus
-            kernel(i,j) = exp(-1*sum( ((x(:,i)-x(:,j))./sigmas).^2 ) ) ;
-            dkernel(i,j,:) = 2*kernel(i,j)*((x(:,i)-x(:,j)).^2)./(sigmas.^3) ;
+            x_i = x(:,i) ; %+ (max(x(:,i))/10.0)*rand(size(x,1), 1);
+            x_j = x(:,j) ; %+ (max(x(:,j))/10.0)*rand(size(x,1), 1);
+            kernel(i,j) = exp(-1*sum( ((x_i-x_j)./sigmas).^2 ) ) ;
+            dkernel(i,j,:) = 2*kernel(i,j)*((x_i-x_j).^2)./(sigmas.^3) ;
         end
     end
     
@@ -54,17 +59,17 @@ for loop = 1:num_loops
         grad_corrfunc(k)=(Jd*dJn - Jn*dJd)/(Jd^2);
     end
     
-    
     correlations(loop) = Jn/Jd ;   
     
+    sigmas = abs(sigmas - grad_corrfunc .* sigmas) ;
+    
     %verbose
-    if(mod(loop, 500)==0)
+    if(mod(loop, 200)==0)
         fprintf('  loop=%d | grad=%.6f | J=%.6f\n', loop, norm(grad_corrfunc,2), correlations(loop));
-         if arguments.realtimeLog
+         if args.log
              elapsed = toc;
-             t = datetime('now') ;
-             key = sprintf('%04i%02i%02i%02i%02i%02.0f',t.Year,t.Month,t.Day,t.Hour,t.Minute,t.Second);
-             save(strcat(arguments.logFolderName,'/',arguments.logFileName, '_', key, '_optim.mat'), 'loop', 'elapsed', 'sigmas', 'kernel_v');
+             save(strcat(args.logFolderName,'/',args.logFileName, '_', key,'_oldOptim.mat'), ...
+                 'loop', 'elapsed', 'sigmas', 'kernel_v', 'correlations');
          end
     end
 end
