@@ -8,6 +8,7 @@ import math
 from scipy import signal
 from lib import utils
 from lib import features  #import spectrum2scaletime, scaletime2scalerate, scalerate2cortical, waveform2auditoryspectrogram
+import matplotlib.pylab as plt
 
 
 def load_auditory_params():
@@ -15,9 +16,13 @@ def load_auditory_params():
     strf_params['scales'] = [
         0.25, 0.35, 0.50, 0.71, 1.0, 1.41, 2.00, 2.83, 4.00, 5.66, 8.00
     ]
-    strf_params['rates'] = [-128, -90.5, -64, -45.3, -32, -22, -16, -11.3, -8, -5.8, -4, 2, 1, .5, .5, \
-                                   1, 2, 4.0, 5.8, 8.0, 11.3, 16.0, 22.6, 32.0, 45.3, 64.0, 90.5, 128.0]
-    strf_params['durationCut'] = 0.3
+    # strf_params['rates'] = [-128, -90.5, -64, -45.3, -32, -22, -16, -11.3, -8, -5.8, -4, 2, 1, .5, .5, \
+    #                                1, 2, 4.0, 5.8, 8.0, 11.3, 16.0, 22.6, 32.0, 45.3, 64.0, 90.5, 128.0]
+    strf_params['rates'] = [
+        -128, -90.5, -64, -45.3, -32, -22.6, -16, -11.3, -8, -5.70, -4, 4,
+        5.70, 8, 11.3, 16, 22.6, 32, 45.3, 64, 90.5, 128
+    ]
+    strf_params['durationCut'] = 0.25
     strf_params['durationRCosDecay'] = 0.05
     strf_params['newFs'] = 16000
     strf_params['sr_time'] = 250
@@ -32,6 +37,8 @@ def spectrum(wavtemp, fs):
     durationRCosDecay = auditory_params['durationRCosDecay']
     sr_time = auditory_params['sr_time']
 
+    wavtemp = np.r_[wavtemp, np.zeros(new_fs)]
+
     if wavtemp.shape[0] > math.floor(durationCut * fs):
         wavtemp = wavtemp[:int(durationCut * fs)]
         wavtemp[wavtemp.shape[0] - int(fs * durationRCosDecay):] = wavtemp[
@@ -42,10 +49,11 @@ def spectrum(wavtemp, fs):
     wavtemp = (wavtemp / 1.01) / (np.max(wavtemp) + np.finfo(float).eps)
     wavtemp = signal.resample(wavtemp, int(wavtemp.shape[0] / fs * new_fs))
     waveform2auditoryspectrogram_args = {
-        'frame_length': 1000 / sr_time,  # sample rate 125 Hz in the NSL toolbox
+        'frame_length':
+        1000 / sr_time,  # sample rate 125 Hz in the NSL toolbox
         'time_constant': 8,
         'compression_factor': -2,
-        'octave_shift': math.log2(new_fs / 16000),
+        'octave_shift': math.log2(new_fs / new_fs),
         'filt': 'p',
         'VERB': 0
     }
@@ -61,6 +69,8 @@ def spectrogram(wavtemp, fs):
     durationRCosDecay = auditory_params['durationRCosDecay']
     sr_time = auditory_params['sr_time']
 
+    wavtemp = np.r_[wavtemp, np.zeros(new_fs)]
+
     if wavtemp.shape[0] > math.floor(durationCut * fs):
         wavtemp = wavtemp[:int(durationCut * fs)]
         wavtemp[wavtemp.shape[0] - int(fs * durationRCosDecay):] = wavtemp[
@@ -71,10 +81,11 @@ def spectrogram(wavtemp, fs):
     wavtemp = (wavtemp / 1.01) / (np.max(wavtemp) + np.finfo(float).eps)
     wavtemp = signal.resample(wavtemp, int(wavtemp.shape[0] / fs * new_fs))
     waveform2auditoryspectrogram_args = {
-        'frame_length': 1000 / sr_time,  # sample rate 125 Hz in the NSL toolbox
+        'frame_length':
+        1000 / sr_time,  # sample rate 125 Hz in the NSL toolbox
         'time_constant': 8,
         'compression_factor': -2,
-        'octave_shift': math.log2(new_fs / 16000),
+        'octave_shift': math.log2(new_fs / new_fs),
         'filt': 'p',
         'VERB': 0
     }
@@ -90,6 +101,8 @@ def mps(wavtemp, fs):
     durationRCosDecay = auditory_params['durationRCosDecay']
     sr_time = auditory_params['sr_time']
 
+    wavtemp = np.r_[wavtemp, np.zeros(new_fs)]
+
     if wavtemp.shape[0] > math.floor(durationCut * fs):
         wavtemp = wavtemp[:int(durationCut * fs)]
         wavtemp[wavtemp.shape[0] - int(fs * durationRCosDecay):] = wavtemp[
@@ -102,10 +115,11 @@ def mps(wavtemp, fs):
     wavtemp = signal.resample(wavtemp, int(wavtemp.shape[0] / fs * new_fs))
 
     waveform2auditoryspectrogram_args = {
-        'frame_length': 1000 / sr_time,  # sample rate 125 Hz in the NSL toolbox
+        'frame_length':
+        1000 / sr_time,  # sample rate 125 Hz in the NSL toolbox
         'time_constant': 8,
         'compression_factor': -2,
-        'octave_shift': math.log2(new_fs / 16000),
+        'octave_shift': math.log2(new_fs / new_fs),
         'filt': 'p',
         'VERB': 0
     }
@@ -126,10 +140,16 @@ def mps(wavtemp, fs):
     # nfft_scale = nfft_fac * 2**utils.nextpow2(stft.shape[1])
     mod_scale, phase_scale, _, _ = features.spectrum2scaletime(
         stft, **strf_args)
+
+    # plt.imshow(phase_scale)
+    # plt.colorbar()
+    # plt.show()
+
     # Scales vs. Time => Scales vs. Rates
-    repres, phase_scale_rate, _, _ = features.scaletime2scalerate(mod_scale * np.exp(1j * phase_scale),\
-                                                            **strf_args)
-    repres = repres[:, :int(repres.shape[1] / 2)]
+
+    repres, phase_scale_rate, _, _ = features.scaletime2scalerate(
+        mod_scale * np.exp(1j * phase_scale), **strf_args)
+    # repres = repres[:, :int(repres.shape[1] / 2)]
     return repres
 
 
@@ -142,7 +162,9 @@ def strf(wavtemp, fs):
     durationRCosDecay = auditory_params['durationRCosDecay']
     new_fs = auditory_params['newFs']
     sr_time = auditory_params['sr_time']
-    
+
+    wavtemp = np.r_[wavtemp, np.zeros(new_fs)]
+
     if wavtemp.shape[0] > math.floor(durationCut * fs):
         wavtemp = wavtemp[:int(durationCut * fs)]
         wavtemp[wavtemp.shape[0] - int(fs * durationRCosDecay):] = wavtemp[
@@ -150,6 +172,10 @@ def strf(wavtemp, fs):
                 fs * durationRCosDecay):] * utils.raised_cosine(
                     np.arange(int(fs * durationRCosDecay)), 0,
                     int(fs * durationRCosDecay))
+    else:
+        wavtemp = np.r_[wavtemp,
+                        np.zeros(
+                            np.abs(len(wavtemp) - int(durationCut * fs)) + 10)]
 
     wavtemp = (wavtemp / 1.01) / (np.max(wavtemp) + np.finfo(float).eps)
     wavtemp = signal.resample(wavtemp, int(wavtemp.shape[0] / fs * new_fs))
@@ -162,10 +188,11 @@ def strf(wavtemp, fs):
     # sr_time = 125  # sample rate (125 Hz in the NSL toolbox)
 
     waveform2auditoryspectrogram_args = {
-        'frame_length': 1000 / sr_time,  # sample rate 125 Hz in the NSL toolbox
+        'frame_length':
+        1000 / sr_time,  # sample rate 125 Hz in the NSL toolbox
         'time_constant': 8,
         'compression_factor': -2,
-        'octave_shift': math.log2(new_fs / 16000),
+        'octave_shift': math.log2(new_fs / new_fs),
         'filt': 'p',
         'VERB': 0
     }
@@ -175,10 +202,10 @@ def strf(wavtemp, fs):
     # # fac =  0,  y = (x > 0), full compression, booleaner.
     # # fac = -1, y = max(x, 0), half-wave rectifier
     # # fac = -2, y = x, linear function
-    # octave_shift = math.log2(new_fs / 16000)  # octave shift
+    # octave_shift = math.log2(new_fs / new_fs)  # octave shift
     stft = features.waveform2auditoryspectrogram(
         wavtemp, **waveform2auditoryspectrogram_args)
-
+    
     strf_args = {
         'num_channels': 128,
         'num_ch_oct': 24,
@@ -196,16 +223,20 @@ def strf(wavtemp, fs):
 
     # Scales vs. Time => Scales vs. Rates
     # nfft_rate = nfft_fac * 2**utils.nextpow2(stft.shape[0])
-    scale_rate, phase_scale_rate, _, _ = features.scaletime2scalerate(mod_scale * np.exp(1j * phase_scale),\
-                                                            **strf_args)
+    scale_rate, phase_scale_rate, _, _ = features.scaletime2scalerate(
+        mod_scale * np.exp(1j * phase_scale), **strf_args)
+    # print(scale_rate.shape)
+    # print(phase_scale_rate.shape)
     #num_channels, num_ch_oct, sr_time, nfft_rate, nfft_scale)
     cortical_rep = features.scalerate2cortical(
         stft, scale_rate, phase_scale_rate, scales, rates, **strf_args)
+    # print(cortical_rep.shape)
     #num_ch_oct, sr_time, nfft_scale, nfft_rate, 2)
     return cortical_rep
 
 
 if __name__ == "__main__":
-    audio, fs = utils.audio_data('/Users/baptistecaramiaux/Work/Projects/TimbreProject_Thoret/Code\ and\ data/timbreStudies/ext/sounds/Iverson1993Whole/01.W.Violin.aiff')
+    audio, fs = utils.audio_data(
+        '/Users/baptistecaramiaux/Work/Projects/TimbreProject_Thoret/Code\ and\ data/timbreStudies/ext/sounds/Iverson1993Whole/01.W.Violin.aiff'
+    )
     spectrum(audio, fs)
-

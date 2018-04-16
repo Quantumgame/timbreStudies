@@ -22,14 +22,19 @@ def adhoc_pca(data, num_comp):
     # idx = np.where(cum_explained > threshold)[0]
     # return projected data
     # return points[:, :idx[0] + 1]
-    return points[:, :num_comp]
+    return points[:, :num_comp], pc, S
 
 
-def pca(tensor_strf, nb_freq, n_components=1):
+def pca(tensor, nb_freq, n_components=1):
+    # print('pca', tensor.shape, nb_freq)
     num_comp = n_components
-    tensor_strf_avg = np.mean(tensor_strf, axis=0)
-    strf_pca = np.zeros((nb_freq, num_comp*tensor_strf.shape[2]))
+    tensor_avg = np.mean(tensor, axis=0)
+    tensor_red = np.zeros((nb_freq, num_comp*tensor.shape[2]))
+    ppcomps = []
+    variances = []
     for freq_i in range(nb_freq):
-        strf_pca[freq_i, :] = np.transpose(
-            adhoc_pca(tensor_strf_avg[freq_i, :, :], num_comp).flatten())
-    return strf_pca
+        pts, pcs, varis = adhoc_pca(tensor_avg[freq_i, :, :], num_comp)
+        tensor_red[freq_i, :] = np.transpose(pts.flatten())
+        ppcomps.append(pcs)
+        variances.append(varis)
+    return tensor_red, ppcomps, variances

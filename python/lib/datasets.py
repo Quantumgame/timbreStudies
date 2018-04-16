@@ -4,12 +4,11 @@
 import os
 import pickle
 import numpy as np
-from lib import utils
-from lib import auditory
-from lib import fourier
+import utils
+import features
 
 
-def database(root_path='../ext/'):
+def load_timbrespace_database(root_path='../ext/'):
     timbrespace_db = {}
     for root, dirs, files in os.walk(os.path.join(root_path, 'sounds')):
         for name in dirs:
@@ -18,31 +17,17 @@ def database(root_path='../ext/'):
     return timbrespace_db
 
 
-def get_representation_func(representation):
-    repres_dict = {
-        'fourier_strf': fourier.strf,
-        'fourier_mps': fourier.mps,
-        'fourier_spectrogram': fourier.spectrogram,
-        'fourier_spectrum': fourier.spectrum,
-        'auditory_strf': auditory.strf,
-        'auditory_mps': auditory.mps,
-        'auditory_spectrogram': auditory.spectrogram,
-        'auditory_spectrum': auditory.spectrum
-    }
-    return repres_dict[representation]
-
-
-def timbrespace_features(timbrespace='Iverson93Whole',
-                         representations=['auditory_strf'],
-                         window=None,
-                         timbrespace_db=None,
-                         verbose=False):
+def load_timbrespace_features(timbrespace='Iverson93Whole',
+                              representations=['strf'],
+                              window=None,
+                              timbrespace_db=None,
+                              verbose=True):
     if (verbose):
-        print('* get {} for {}'.format(representations,timbrespace))
+        print('* get STRF for {}'.format(timbrespace))
 
     # if the database with the timbrespaces' names is not loaded yet, load it
     if (timbrespace_db == None):
-        timbrespace_db = database()
+        timbrespace_db = load_timbrespace_database()
 
     # check if the timbrespace name is actually in the db
     valid_timbrespace_name = timbrespace in timbrespace_db.keys()
@@ -52,7 +37,7 @@ def timbrespace_features(timbrespace='Iverson93Whole',
     # if the set of strfs for that timbrespace has not been computed and stored yet, do it
     # otherwise load it (the set of strfs is stored in a 'pickle' file)
     # load strf parameters
-    # strf_params = utils.load_strf_params()
+    strf_params = utils.load_strf_params()
     # in case there is more than one type of representation space to be computed,
     # build a dictionnary with one entry for each space
     timbrespace_features = {}
@@ -60,52 +45,36 @@ def timbrespace_features(timbrespace='Iverson93Whole',
         timbrespace_features[rs] = []
 
     # load each sound in this timbrespace and compute the STRF of that sound
-    filename_dict = {}
-    audio_lengths = []
     for rs in representations:
-        filename_dict[rs] = []
         for root, dirs, files in os.walk(timbrespace_db[timbrespace]['path']):
             for name in files:
                 if name.split('.')[-1] in ['aiff', 'wav']:
-                    filename_dict[rs].append(os.path.join(root, name))
+                    if (verbose):
+                        print('  |_ {}'.format(name))
                     audio, fs = utils.audio_data(os.path.join(root, name))
-                    audio_lengths.append(len(audio))
-    min_aud_len = np.min(audio_lengths)
-    for rs in representations:
-        for fn in filename_dict[rs]:
-            if (verbose):
-                print('  |_ {}'.format(fn))
-            audio, fs = utils.audio_data(fn)
-            audio = audio[:min_aud_len]
-            # strf_params.update({'fs': fs})
-            # compute each space in the list 'representations'
-            repres = get_representation_func(rs)(audio, fs)
-            # print(len(audio), fs, repres.shape)
-            timbrespace_features[rs].append(repres)
-
-            # auditory.strf(audio, fs))
-        # if (rs == 'strf'):
-        #     if window == None:
-        #         timbrespace_features[rs].append(
-        #             auditory.strf(audio, fs))
-        #         # print(timbrespace_features[rs][-1].shape)
-        #     else:
-        #         # windowing parameters
-        #         win_length_n = int(window['win_length'] * fs)
-        #         hop_length_n = int(window['hop_length'] * fs)
-        #         num_frames = max(
-        #             int((
-        #                 len(audio) - win_length_n) / hop_length_n),
-        #             1)
-        #         windowed_features = []
-        #         for wn in range(num_frames):
-        #             start_n = wn * hop_length_n
-        #             end_n = start_n + win_length_n
-        #             if (rs == 'strf'):
-        #                 windowed_features.append(
-        #                     features.strf(audio[start_n:end_n],
-        #                                   fs))
-        #         timbrespace_features[rs].append(windowed_features)
+                    strf_params.update({'fs': fs})
+                    # compute each space in the list 'representations'
+                    if (rs == 'strf'):
+                        if window == None:
+                            timbrespace_features[rs].append(
+                                features.strf(audio, **strf_params))
+                        else:
+                            # windowing parameters
+                            win_length_n = int(window['win_length'] * fs)
+                            hop_length_n = int(window['hop_length'] * fs)
+                            num_frames = max(
+                                int((
+                                    len(audio) - win_length_n) / hop_length_n),
+                                1)
+                            windowed_features = []
+                            for wn in range(num_frames):
+                                start_n = wn * hop_length_n
+                                end_n = start_n + win_length_n
+                                if (rs == 'strf'):
+                                    windowed_features.append(
+                                        features.strf(audio[start_n:end_n], **
+                                                      strf_params))
+                            timbrespace_features[rs].append(windowed_features)
 
     if (verbose):
         print('  |_ num. of sounds: {}'.format(
@@ -125,7 +94,7 @@ def load_timbrespace_windowed_features(timbrespace,
 
     # if the database with the timbrespaces' names is not loaded yet, load it
     if (timbrespace_db == None):
-        timbrespace_db = database()
+        timbrespace_db = load_timbrespace_database()
 
     # check if the timbrespace name is actually in the db
     valid_timbrespace_name = timbrespace in timbrespace_db.keys()
@@ -168,10 +137,10 @@ def load_timbrespace_windowed_features(timbrespace,
     return timbrespace_features
 
 
-def timbrespace_dismatrix(timbrespace, timbrespace_db=None, verbose=False):
+def load_timbrespace_dismatrix(timbrespace, timbrespace_db=None, verbose=True):
     if (verbose): print('* get dissimiarity matrix for {}'.format(timbrespace))
     if (timbrespace_db == None):
-        timbrespace_db = database()
+        timbrespace_db = load_timbrespace_database()
     valid_timbrespace_name = timbrespace in timbrespace_db.keys()
     if not valid_timbrespace_name:
         raise ValueError('{} is a wrong timbre space name'.format(timbrespace))

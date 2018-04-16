@@ -12,9 +12,11 @@ from lib import features  #import spectrum2scaletime, scaletime2scalerate, scale
 
 def load_params():
     params = {}
-    params['windowSize'] = 743
-    params['frameStep'] = 185
-    params['durationCut'] = 0.3
+    # params['windowSize'] = 743
+    # params['frameStep'] = 185
+    params['windowSize'] = 256
+    params['frameStep'] = 128
+    params['durationCut'] = 0.25
     params['durationRCosDecay'] = 0.05
     params['newFs'] = 16000
     return params
@@ -36,6 +38,8 @@ def spectrum(wavtemp, fs):
     frameStep = params['frameStep']
     durationCut = params['durationCut']
     durationRCosDecay = params['durationRCosDecay']
+
+    wavtemp = np.r_[wavtemp,np.zeros(16000)]
 
     if wavtemp.shape[0] > math.floor(durationCut * fs):
         wavtemp = wavtemp[:int(durationCut * fs)]
@@ -63,6 +67,8 @@ def spectrogram(wavtemp, fs):
     durationCut = params['durationCut']
     durationRCosDecay = params['durationRCosDecay']
 
+    wavtemp = np.r_[wavtemp,np.zeros(16000)]
+
     if wavtemp.shape[0] > math.floor(durationCut * fs):
         wavtemp = wavtemp[:int(durationCut * fs)]
         wavtemp[wavtemp.shape[0] - int(fs * durationRCosDecay):] = wavtemp[
@@ -88,6 +94,8 @@ def mps(wavtemp, fs):
     durationCut = params['durationCut']
     durationRCosDecay = params['durationRCosDecay']
 
+    wavtemp = np.r_[wavtemp,np.zeros(16000)]
+
     if wavtemp.shape[0] > math.floor(durationCut * fs):
         wavtemp = wavtemp[:int(durationCut * fs)]
         wavtemp[wavtemp.shape[0] - int(fs * durationRCosDecay):] = wavtemp[
@@ -111,19 +119,19 @@ def mps(wavtemp, fs):
     M1 = 2**utils.nextpow2(repres.shape[1])
     M2 = 2 * M1
 
-    Y = np.zeros((N2, M2))
+    Y = np.zeros((N2, M2),dtype=np.complex_)
 
     # % first fourier transform (w.r.t. frequency axis)
     for n in range(N):
-        R1 = np.abs(np.fft.fft(repres[n, :], M2))
+        R1 = np.fft.fft(repres[n, :], M2)
         Y[n, :] = R1[:M2]
 
     # % second fourier transform (w.r.t. temporal axis)
     for m in range(M2):
-        R1 = np.abs(np.fft.fft(Y[:N, m], N2))
+        R1 = np.fft.fft(Y[:N, m], N2)
         Y[:, m] = R1
 
-    repres = np.abs(Y[:, :int(Y.shape[1] / 2)])
+    repres = np.absolute(Y[:, :int(Y.shape[1] / 2)])
     # %scaleRateAngle = angle(Y) ;
 
     return repres
@@ -137,6 +145,8 @@ def strf(wavtemp, fs):
     frameStep = params['frameStep']
     durationCut = params['durationCut']
     durationRCosDecay = params['durationRCosDecay']
+
+    wavtemp = np.r_[wavtemp,np.zeros(16000)]
 
     if wavtemp.shape[0] > math.floor(durationCut * fs):
         wavtemp = wavtemp[:int(durationCut * fs)]
@@ -152,7 +162,8 @@ def strf(wavtemp, fs):
     spectrogram__ = features.complexSpectrogram(wavtemp, windowSize, frameStep)
     repres = np.transpose(
         np.abs(spectrogram__[:int(spectrogram__.shape[0] / 2), :]))
-
+    # print(spectrogram__.shape)
+    # print(repres.shape)
     N = repres.shape[0]
     M = repres.shape[1]
     # spatial, temporal zeros padding
