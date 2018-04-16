@@ -53,6 +53,12 @@ def kernel_optim(input_data,
             }
         }, open(os.path.join(log_foldername, 'optim_config.pkl'), 'wb'))
 
+
+    # print(input_data[:,3].shape)
+    # plt.plot(input_data[:,3])
+    # plt.plot(input_data[:,3].reshape(-1,1) / sigmas)
+    # plt.show()
+
     for loop in range(num_loops):  # 0 to nump_loops-1
         sigmas = sigmas - learning_rate * gradients * sigmas
         for i in range(ninstrus):
@@ -60,35 +66,44 @@ def kernel_optim(input_data,
             # plt.plot(np.divide(input_data[:, i], (sigmas[:, 0] + np.finfo(float).eps)))
             # plt.show()
             for j in range(i + 1, ninstrus):
-                kernel[i, j] = np.exp(-np.sum(
-                    np.power(
-                        np.divide(input_data[:, i] - input_data[:, j],
-                                  (sigmas[:, 0] + np.finfo(float).eps)), 2)))
-                # print(kernel[i, j], np.sum(np.power(input_data[:, i] - input_data[:, j],2)), np.sum(
+                # kernel[i, j] = np.exp(-np.sum(
                 #     np.power(
                 #         np.divide(input_data[:, i] - input_data[:, j],
-                #                   (sigmas[:, 0] + np.finfo(float).eps)), 2)), np.max(input_data[:, i]), np.max(input_data[:, j]))
-                dkernel[i, j, :] = 2 * kernel[i, j] * np.power(
-                    (input_data[:, i] - input_data[:, j]), 2) / (np.power(
+                #                   (sigmas[:, 0] + np.finfo(float).eps)), 2)))
+                kernel[i, j] = -np.sum(
+                    np.power(
+                        np.divide(input_data[:, i] - input_data[:, j],
+                                  (sigmas[:, 0] + np.finfo(float).eps)), 2))
+                # dkernel[i, j, :] = 2 * kernel[i, j] * np.power(
+                #     (input_data[:, i] - input_data[:, j]), 2) / (np.power(
+                #         sigmas[:, 0], 3) + np.finfo(float).eps)
+                dkernel[i, j, :] = 2 * np.power((input_data[:, i] - input_data[:, j]), 2) / (np.power(
                         sigmas[:, 0], 3) + np.finfo(float).eps)
+
+        # plt.subplot(1,2,1)
+        # plt.imshow(kernel)
+        # plt.subplot(1,2,2)
+        # plt.imshow(target_data)
+        # plt.show()
+
         kernel_v = kernel[idx_triu]
         mean_kernel = np.mean(kernel_v)
         std_kernel = np.std(kernel_v)
 
-        Jn = np.sum(
-            np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+        Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
         Jd = (no_samples - 1) * std_target * std_kernel
         
         correlations.append(Jn / (Jd + np.finfo(float).eps))
 
         for k in range(ndims):
-            # dkernel_k_v = dkernel[:, :, k][idx_triu]
-            dkernel_k_v = dkernel[idx_triu[0], idx_triu[1], k]
+            dkernel_k_v = dkernel[:, :, k][idx_triu]
+            # dkernel_k_v = dkernel[idx_triu[0], idx_triu[1], k]
             dJn = np.sum(dkernel_k_v * (target_v - mean_target))
             dJd = (no_samples - 1) / no_samples * \
                         std_target / (std_kernel + np.finfo(float).eps) * \
                         np.sum(dkernel_k_v * (kernel_v - mean_kernel))
             gradients[k] = (Jd * dJn - Jn * dJd) / (np.power(Jd,2) + np.finfo(float).eps)
+            # print(loop+1, k, Jd, dJn, Jn, dJd, (np.power(Jd,2) + np.finfo(float).eps), np.linalg.norm(gradients, 2))
 
         # dkernel_k_v = dkernel[idx_triu[0], idx_triu[1], :].reshape(-1, dkernel.shape[2])
         # # print(dkernel_k_v.shape, target_v.shape)
@@ -98,7 +113,8 @@ def kernel_optim(input_data,
         #                 np.sum(np.multiply(dkernel_k_v, (kernel_v.reshape(-1,1) - mean_kernel)), axis=0)
         # gradients = (Jd * dJn - Jn * dJd) / (Jd**2 + np.finfo(float).eps)
 
-        monitoring_step = 5000
+        # print('  |_ loop num.: {}/{} | grad={:.6f} | J={:.6f}'.format(loop + 1, num_loops, np.linalg.norm(gradients, 2), correlations[loop]))
+        monitoring_step = 200
         if (verbose):
             if ((loop + 1) % monitoring_step == 0):
                 print('  |_ loop num.: {}/{} | grad={:.6f} | J={:.6f}'.format(

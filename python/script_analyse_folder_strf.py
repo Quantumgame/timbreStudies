@@ -14,9 +14,9 @@ import subprocess
 timbrespace_db = load.database()
 representations = [
     # 'auditory_spectrum',
-    'fourier_spectrum',
+    # 'fourier_spectrum',
     'auditory_strf',
-    'fourier_strf',
+    # 'fourier_strf',
     # 'auditory_spectrogram', 
     # 'fourier_spectrogram',
     # 'auditory_mps', 
@@ -41,13 +41,13 @@ def run_once(tsp, rs, optim_args):
     if rs_type == 'strf':
         n_components = 1
         for i in range(len(aud_repres)):
-            # print('PCA on sound %02i' % (i + 1))
             strf_reduced, mapping, variances = pca.pca(
                 np.absolute(aud_repres[i]),
                 aud_repres[i].shape[1],
                 n_components=n_components)
             strf_reduced = strf_reduced.flatten()
-            tab_red.append(strf_reduced / np.max(strf_reduced))
+            tab_red.append(strf_reduced)
+            # tab_red.append(strf_reduced / np.max(strf_reduced))
         tab_red = np.transpose(np.asarray(tab_red))
     elif rs_type == 'spectrogram' or rs_type == 'mps':
         for i in range(len(aud_repres)):
@@ -77,8 +77,6 @@ def run_once(tsp, rs, optim_args):
 def run_optimization(optim_args={}):
     for i, tsp in enumerate(sorted(timbrespace_db.keys())):
         print('Processing', tsp)
-        # log_foldername = 'outs/' + tsp.lower() + '-' + time.strftime(
-        #     '%y%m%d@%H%M%S')
         log_foldername = 'outs_all/' + tsp.lower()
         subprocess.call(['mkdir', '-p', log_foldername])
         for rs in representations:
@@ -87,58 +85,6 @@ def run_optimization(optim_args={}):
             subprocess.call(['mkdir', '-p', rslog_foldername])
             optim_args['log_foldername'] = rslog_foldername
             run_once(tsp, rs, optim_args)
-            # aud_repres = load.timbrespace_features(
-            #     tsp,
-            #     representations=[rs],
-            #     window=None,
-            #     timbrespace_db=None,
-            #     verbose=True)[rs]
-            # tab_red = []
-            # rs_type = rs.split('_')[-1]
-            # mapping = []
-            # variances = []
-            # if rs_type == 'strf':
-            #     n_components = 1
-            #     for i in range(len(aud_repres)):
-            #         # print('PCA on sound %02i' % (i + 1))
-            #         strf_reduced, mapping, variances = pca.pca(
-            #             np.absolute(aud_repres[i]),
-            #             aud_repres[i].shape[1],
-            #             n_components=n_components)
-            #         strf_reduced = strf_reduced.flatten()
-            #         tab_red.append(strf_reduced / np.max(strf_reduced))
-            #     tab_red = np.transpose(np.asarray(tab_red))
-            # elif rs_type == 'spectrogram' or rs_type == 'mps':
-            #     for i in range(len(aud_repres)):
-            #         tab_red.append(aud_repres[i].flatten())
-            #     tab_red = np.transpose(np.asarray(tab_red))
-            # elif rs_type == 'spectrum':
-            #     for i in range(len(aud_repres)):
-            #         tab_red.append(aud_repres[i])
-            #     # 128 x nb sounds (time or freq?)
-            #     tab_red = np.transpose(np.asarray(tab_red))
-            # pickle.dump({
-            #     'data_repres': aud_repres,
-            #     'data_proj': tab_red,
-            #     'mapping': mapping,
-            #     'variances': variances,
-            #     'dissimilarities': dissimil_mat,
-            # }, open(os.path.join(rslog_foldername, 'dataset.pkl'), 'wb'))
-            # print('  data dimension:', tab_red.shape)
-            # print('* normalizing')
-            # tab_red = tab_red / np.mean(np.max(tab_red, axis=0))
-            # # optimization arguments
-            # optim_args = {
-            #     'cost': 'correlation',
-            #     'init_sig_mean': 10.0,
-            #     'init_sig_var': 1.0,
-            #     'num_loops': 30000,
-            #     'log_foldername': rslog_foldername,
-            #     'logging': True
-            # }
-            # # optimization
-            # correlations = training.kernel_optim(
-            #     tab_red, dissimil_mat, **optim_args)
 
 
 def run_all():
@@ -147,7 +93,7 @@ def run_all():
         'init_sig_mean': 1.0,
         'init_sig_var': 0.01,
         'num_loops': 100000,
-        'learning_rate': 0.1,
+        'learning_rate': 0.05,
         'log_foldername': './',
         'logging': True
     }
