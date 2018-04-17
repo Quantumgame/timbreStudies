@@ -58,33 +58,137 @@ def res():
         'grey1977',
         'grey1978',
         'iverson1993onset',
+        'iverson1993whole',
+        'lakatoscomb',
+        'lakatosharm',
+        'lakatosperc',
+        'mcadams1995',
+        'patil2012_a3',
+        'patil2012_dx4',
+        'patil2012_gd4'
     ]
     representations = [
         'auditory_spectrum',
         'fourier_spectrum',
-        'auditory_strf',
-        'fourier_strf',
+        # 'auditory_strf',
+        # 'fourier_strf',
     ]
-    corrs = {}
+    files_ = {}
+    dirs_ = {}
     for i, tsp in enumerate(sorted(timbrespace_db)):
-        corrs[tsp] = []
-        for repres in representations:
-            folder = 'outs_all/' + tsp.lower()
+        files_[tsp] = {}
+        dirs_[tsp] = {}
+        for r_i, repres in enumerate(representations):
+            folder = 'outs_all_expopt/' + tsp.lower()
+            files_[tsp][repres] = []
+            dirs_[tsp][repres] = []
             for root, dirs, files in os.walk(folder):
-                test_dirs = []
                 for f in files:
                     if repres in root.split('/')[-1] and f.split('=')[0] == 'optim_process_l':
-                        # print('file', root, f)
-                        test_dirs.append(f)
-                if len(test_dirs):
-                    test_dirs = sorted(test_dirs)
-                    # print(test_dirs)
-                    file = test_dirs[-1]
-                    # print(os.path.join(root,file))
-                    optim_process = pickle.load(open(os.path.join(root,file), 'rb'))
-                    corrs[tsp].append(optim_process['correlations'][-1])
-        plt.plot(corrs[tsp], '-o')
-    plt.show()
+                        files_[tsp][repres].append(f)
+                        dirs_[tsp][repres] = root
+
+    for i, tsp in enumerate(sorted(timbrespace_db)):
+        plt.figure()
+        for r_i, repres in enumerate(representations):
+            # folder = 'outs_all/' + tsp.lower()
+            # for root, dirs, files in os.walk(folder):
+            #     test_dirs = []
+            #     for f in files:
+            #         if repres in root.split('/')[-1] and f.split('=')[0] == 'optim_process_l':
+            #             # print('file', root, f)
+            #             test_dirs.append(f)
+            if len(files_[tsp][repres]):
+                root = dirs_[tsp][repres]
+                # print(repres, test_dirs)
+                test_dirs = sorted(files_[tsp][repres])
+                # print(test_dirs)
+                file = test_dirs[-1]
+                print(repres, os.path.join(root,file))
+                optim_process = pickle.load(open(os.path.join(root,file), 'rb'))
+                # corrs[tsp].append(optim_process['correlations'][-1])
+                corrs = optim_process['correlations']
+                # plt.plot(corrs[tsp], '-o')
+                plt.subplot(1, 2, r_i+1)
+                plt.plot(corrs, '-')
+                plt.ylim([-1.0, 0.0])
+        plt.show()
+
+
+def compare_opt():
+    timbrespace_db = [
+        'grey1977',
+        'grey1978',
+        'iverson1993onset',
+        'iverson1993whole',
+        'lakatoscomb',
+        'lakatosharm',
+        'lakatosperc',
+        'mcadams1995',
+        'patil2012_a3',
+        'patil2012_dx4',
+        'patil2012_gd4'
+    ]
+    representations = [
+        'auditory_spectrum',
+        'fourier_spectrum',
+        # 'auditory_strf',
+        # 'fourier_strf',
+    ]
+    files_exp = {}
+    dirs_exp = {}
+    files_log = {}
+    dirs_log = {}
+    for i, tsp in enumerate(sorted(timbrespace_db)):
+        files_exp[tsp] = {}
+        dirs_exp[tsp] = {}
+        files_log[tsp] = {}
+        dirs_log[tsp] = {}
+        for r_i, repres in enumerate(representations):
+            folder = 'outs_all_expopt/' + tsp.lower()
+            files_exp[tsp][repres] = []
+            dirs_exp[tsp][repres] = []
+            for root, dirs, files in os.walk(folder):
+                for f in files:
+                    if repres in root.split('/')[-1] and f.split('=')[0] == 'optim_process_l':
+                        files_exp[tsp][repres].append(f)
+                        dirs_exp[tsp][repres] = root
+            folder = 'outs_all/' + tsp.lower()
+            files_log[tsp][repres] = []
+            dirs_log[tsp][repres] = []
+            for root, dirs, files in os.walk(folder):
+                for f in files:
+                    if repres in root.split('/')[-1] and f.split('=')[0] == 'optim_process_l':
+                        files_log[tsp][repres].append(f)
+                        dirs_log[tsp][repres] = root
+
+    for i, tsp in enumerate(sorted(timbrespace_db)):
+        plt.figure()
+        plt.suptitle(tsp)
+        for r_i, repres in enumerate(representations):
+            if len(files_exp[tsp][repres]):
+                
+                plt.subplot(1, 2, r_i+1)
+                
+                root = dirs_exp[tsp][repres]
+                test_dirs = sorted(files_exp[tsp][repres])
+                file = test_dirs[-1]
+                optim_process = pickle.load(open(os.path.join(root,file), 'rb'))
+                corrs = optim_process['correlations']
+                plt.plot(corrs, '-', label='exp')
+
+                root = dirs_log[tsp][repres]
+                test_dirs = sorted(files_log[tsp][repres])
+                file = test_dirs[-1]
+                optim_process = pickle.load(open(os.path.join(root,file), 'rb'))
+                corrs = optim_process['correlations']
+                plt.plot(corrs, '-', label='log')
+
+                plt.ylim([-1.0, 0.0])
+                plt.legend()
+
+        plt.show()
+
 
 
 
@@ -92,4 +196,6 @@ def res():
 if __name__=="__main__":
     # viz_one_result()
     # viz_ntests()
-    res()
+    # res()
+    compare_opt()
+
