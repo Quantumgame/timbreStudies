@@ -10,12 +10,13 @@ import os
 def kernel_optim(input_data,
                  target_data,
                  cost='correlation',
-                 loss='likelihood',
+                 loss='exp_sum',
                  init_sig_mean=10.0,
                  init_sig_var=0.5,
                  num_loops=10000,
                  learning_rate=0.001,
                  log_foldername='./',
+                 resume=None,
                  logging=False,
                  verbose=True):
 
@@ -26,11 +27,18 @@ def kernel_optim(input_data,
     # plt.show()
     ndims, ninstrus = input_data.shape[0], input_data.shape[1]
     no_samples = ninstrus * (ninstrus - 1) / 2
-    sigmas = np.abs(init_sig_mean + init_sig_var * np.random.randn(ndims, 1))
-    init_seed = sigmas
-    gradients = np.zeros((ndims, 1))
-
-    correlations = []  # = np.zeros((num_loops, ))
+    if resume != None:
+        init_seed = resume['init_seed']
+        sigmas = resume['sigmas']
+        gradients = resume['gradients']
+        correlations = resume['correlations']
+        retrieved_loop = resume['retrieved_loop']
+    else:
+        sigmas = np.abs(init_sig_mean + init_sig_var * np.random.randn(ndims, 1))
+        init_seed = sigmas
+        gradients = np.zeros((ndims, 1))
+        correlations = []  # = np.zeros((num_loops, ))
+        retrieved_loop = 0
 
     idx_triu = np.triu_indices(target_data.shape[0], k=1)
     # print(idx_triu[0], idx_triu[1])
@@ -46,6 +54,7 @@ def kernel_optim(input_data,
             'seed': init_seed,
             'args': {
                 'cost': cost,
+                'loss': loss,
                 'init_sig_mean': init_sig_mean,
                 'init_sig_var': init_sig_var,
                 'num_loops': num_loops,
@@ -60,7 +69,7 @@ def kernel_optim(input_data,
     # plt.plot(input_data[:,3].reshape(-1,1) / sigmas)
     # plt.show()
 
-    for loop in range(num_loops):  # 0 to nump_loops-1
+    for loop in range(retrieved_loop, num_loops):  # 0 to nump_loops-1
         sigmas = sigmas - learning_rate * gradients * sigmas
         for i in range(ninstrus):
             # plt.plot(input_data[:, i])

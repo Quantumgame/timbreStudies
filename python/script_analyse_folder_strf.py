@@ -13,12 +13,12 @@ import subprocess
 
 timbrespace_db = load.database()
 representations = [
-    'auditory_spectrum',
+    # 'auditory_spectrum',
     # 'fourier_spectrum',
     # 'auditory_strf',
     # 'fourier_strf',
     # 'auditory_spectrogram', 
-    # 'fourier_spectrogram',
+    'fourier_spectrogram',
     # 'auditory_mps', 
     # 'fourier_mps',
 ]
@@ -90,11 +90,11 @@ def run_optimization(optim_args={}):
 def run_all():
     optim_args = {
         'cost': 'correlation',
-        'loss': 'loglikelihood',
+        'loss': 'exp_sum',
         'init_sig_mean': 1.0,
         'init_sig_var': 0.01,
-        'num_loops': 100000,
-        'learning_rate': 1.00,
+        'num_loops': 50000,
+        'learning_rate': 0.5,
         'log_foldername': './',
         'logging': True
     }
@@ -137,6 +137,46 @@ def resume_all(resumefn='./outs/'):
             else:
                 subprocess.call(['mkdir', '-p', rslog_foldername])
                 run_once(tsp, rs, rslog_foldername)
+
+
+def resume_some(tsps=None, reps=None):
+    tspaces = tsp if tsps != None else timbrespace_db.keys()
+    some_reps = reps if reps != None else representations
+    for i, tsp in enumerate(sorted(tspaces)):
+        print('Processing', tsp)
+        dissimil_mat = load.timbrespace_dismatrix(tsp, timbrespace_db)
+        for rs in some_reps:
+            rslog_foldername = './outs_all/' + tsp.lower() + '/' + rs
+            if os.path.isdir(rslog_foldername):
+                resume = {}
+                for root, dirs, files in os.walk(rslog_foldername):
+                    loop_id = []
+                    for name in files:
+                        if name.split('.')[-1] == 'pkl' and 'optim_process' in name.split('.')[0]:
+                            loop_id.append(int(name.split('.')[0].split('=')[-1]))
+                
+                optim_process = pickle.load(open(os.path.join(retrieve_foldername,'optim_process_l={}.pkl'.format(retrieved_loop)), 'rb'))
+                optim_config = pickle.load(open(os.path.join(retrieve_foldername,'optim_config.pkl'), 'rb'))
+                dataset = pickle.load(open(os.path.join(retrieve_foldername,'dataset.pkl'), 'rb'))
+
+                input_data = dataset['data_proj']
+                target_data = dataset['dissimilarities']
+
+                resume['retrieved_loop'] = np.max(loop_id)
+                resume['init_seed'] = optim_config['seed']
+
+                if verbose:
+                    print("* resuming with '{}' of size {}".format(retrieve_foldername.split('/')[-1], input_data.shape))
+
+                init_seed = optim_config['seed']
+                cost = optim_config['args']['cost']
+                init_sig_mean = optim_config['args']['init_sig_mean']
+                init_sig_var = optim_config['args']['init_sig_var']
+                training.resume_kernel_optim(
+                    rslog_foldername,
+                    rslog_foldername,
+                    num_loops=100000,
+                    logging=True)
 
 
 def nonopt_correlations():

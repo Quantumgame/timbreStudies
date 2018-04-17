@@ -15,7 +15,7 @@ def load_params():
     # params['windowSize'] = 743
     # params['frameStep'] = 185
     params['windowSize'] = 256
-    params['frameStep'] = 128
+    params['frameStep'] = 256
     params['durationCut'] = 0.25
     params['durationRCosDecay'] = 0.05
     params['newFs'] = 16000

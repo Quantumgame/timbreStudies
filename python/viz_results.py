@@ -35,7 +35,7 @@ def viz_ntests():
                 correlations[str(optim_config['args']['learning_rate'])] = []
             correlations[str(optim_config['args']['learning_rate'])].append(optim_process['correlations'])
     n_lr = len(correlations.keys())
-    for lri, lr in enumerate(correlations.keys()):
+    for lri, lr in enumerate(sorted(correlations.keys())):
         plt.subplot(1,n_lr,lri+1)
 
         correlations_i = np.transpose(np.array(correlations[lr]))
@@ -135,55 +135,44 @@ def compare_opt():
         # 'auditory_strf',
         # 'fourier_strf',
     ]
-    files_exp = {}
-    dirs_exp = {}
-    files_log = {}
-    dirs_log = {}
+    files_logs = {}
+    dirs_logs = {}
     for i, tsp in enumerate(sorted(timbrespace_db)):
-        files_exp[tsp] = {}
-        dirs_exp[tsp] = {}
-        files_log[tsp] = {}
-        dirs_log[tsp] = {}
+        files_logs[tsp] = {}
+        dirs_logs[tsp] = {}
         for r_i, repres in enumerate(representations):
-            folder = 'outs_all_expopt/' + tsp.lower()
-            files_exp[tsp][repres] = []
-            dirs_exp[tsp][repres] = []
-            for root, dirs, files in os.walk(folder):
-                for f in files:
-                    if repres in root.split('/')[-1] and f.split('=')[0] == 'optim_process_l':
-                        files_exp[tsp][repres].append(f)
-                        dirs_exp[tsp][repres] = root
             folder = 'outs_all/' + tsp.lower()
-            files_log[tsp][repres] = []
-            dirs_log[tsp][repres] = []
+            files_logs[tsp][repres] = {}
+            dirs_logs[tsp][repres] = {}
             for root, dirs, files in os.walk(folder):
                 for f in files:
-                    if repres in root.split('/')[-1] and f.split('=')[0] == 'optim_process_l':
-                        files_log[tsp][repres].append(f)
-                        dirs_log[tsp][repres] = root
-
+                    if repres in root.split('/')[-1]:
+                        oc = pickle.load(open(os.path.join(root,'optim_config.pkl'), 'rb'))
+                        key = oc['args']['loss']+'-lr{}'.format(oc['args']['learning_rate'])
+                        if key not in files_logs[tsp][repres].keys():
+                            files_logs[tsp][repres][key] = []
+                            dirs_logs[tsp][repres][key] = []
+                        if f.split('=')[0] == 'optim_process_l':
+                            # print(tsp, repres, key, f)
+                            files_logs[tsp][repres][key].append(int(f.split('=')[1].split('.')[0]))
+                            dirs_logs[tsp][repres][key] = root
+                            # print(files_logs[tsp][repres][key])
+    # print(files_logs['grey1977']['auditory_spectrum'])
     for i, tsp in enumerate(sorted(timbrespace_db)):
         plt.figure()
         plt.suptitle(tsp)
         for r_i, repres in enumerate(representations):
-            if len(files_exp[tsp][repres]):
-                
+            if len(files_logs[tsp][repres]):
                 plt.subplot(1, 2, r_i+1)
-                
-                root = dirs_exp[tsp][repres]
-                test_dirs = sorted(files_exp[tsp][repres])
-                file = test_dirs[-1]
-                optim_process = pickle.load(open(os.path.join(root,file), 'rb'))
-                corrs = optim_process['correlations']
-                plt.plot(corrs, '-', label='exp')
-
-                root = dirs_log[tsp][repres]
-                test_dirs = sorted(files_log[tsp][repres])
-                file = test_dirs[-1]
-                optim_process = pickle.load(open(os.path.join(root,file), 'rb'))
-                corrs = optim_process['correlations']
-                plt.plot(corrs, '-', label='log')
-
+                for l in sorted(dirs_logs[tsp][repres].keys()):
+                    root = dirs_logs[tsp][repres][l]
+                    test_dirs = sorted(files_logs[tsp][repres][l])
+                    # print(tsp, repres, test_dirs)
+                    file = 'optim_process_l={}.pkl'.format(test_dirs[-1])
+                    # print(test_dirs)
+                    optim_process = pickle.load(open(os.path.join(root, file), 'rb'))
+                    corrs = optim_process['correlations']
+                    plt.plot(corrs, '-', label=l)
                 plt.ylim([-1.0, 0.0])
                 plt.legend()
 
