@@ -10,6 +10,7 @@ import os
 def kernel_optim(input_data,
                  target_data,
                  cost='correlation',
+                 loss='likelihood',
                  init_sig_mean=10.0,
                  init_sig_var=0.5,
                  num_loops=10000,
@@ -66,19 +67,28 @@ def kernel_optim(input_data,
             # plt.plot(np.divide(input_data[:, i], (sigmas[:, 0] + np.finfo(float).eps)))
             # plt.show()
             for j in range(i + 1, ninstrus):
-                # kernel[i, j] = np.exp(-np.sum(
-                #     np.power(
-                #         np.divide(input_data[:, i] - input_data[:, j],
-                #                   (sigmas[:, 0] + np.finfo(float).eps)), 2)))
-                kernel[i, j] = -np.sum(
-                    np.power(
-                        np.divide(input_data[:, i] - input_data[:, j],
-                                  (sigmas[:, 0] + np.finfo(float).eps)), 2))
-                # dkernel[i, j, :] = 2 * kernel[i, j] * np.power(
-                #     (input_data[:, i] - input_data[:, j]), 2) / (np.power(
-                #         sigmas[:, 0], 3) + np.finfo(float).eps)
-                dkernel[i, j, :] = 2 * np.power((input_data[:, i] - input_data[:, j]), 2) / (np.power(
-                        sigmas[:, 0], 3) + np.finfo(float).eps)
+                if loss == 'exp_sum':
+                    kernel[i, j] = np.exp(-np.sum(
+                        np.power(
+                            np.divide(input_data[:, i] - input_data[:, j],
+                                      (sigmas[:, 0] + np.finfo(float).eps)), 2)))
+                    dkernel[i, j, :] = 2 * kernel[i, j] * np.power(
+                        (input_data[:, i] - input_data[:, j]), 2) / (np.power(
+                            sigmas[:, 0], 3) + np.finfo(float).eps)
+                elif loss == 'sum':
+                    kernel[i, j] = -np.sum(
+                        np.power(
+                            np.divide(input_data[:, i] - input_data[:, j],
+                                      (sigmas[:, 0] + np.finfo(float).eps)), 2))
+                    dkernel[i, j, :] = 2 * np.power((input_data[:, i] - input_data[:, j]), 2) / (np.power(
+                            sigmas[:, 0], 3) + np.finfo(float).eps)
+                # elif loss == 'log_likelihood':
+                #     kernel[i, j] = -np.sum(
+                #         np.power(
+                #             np.divide(input_data[:, i] - input_data[:, j],
+                #                       (sigmas[:, 0] + np.finfo(float).eps)), 2))
+                #     dkernel[i, j, :] = 2 * np.power((input_data[:, i] - input_data[:, j]), 2) / (np.power(
+                #             sigmas[:, 0], 3) + np.finfo(float).eps)
 
         # plt.subplot(1,2,1)
         # plt.imshow(kernel)
@@ -114,7 +124,7 @@ def kernel_optim(input_data,
         # gradients = (Jd * dJn - Jn * dJd) / (Jd**2 + np.finfo(float).eps)
 
         # print('  |_ loop num.: {}/{} | grad={:.6f} | J={:.6f}'.format(loop + 1, num_loops, np.linalg.norm(gradients, 2), correlations[loop]))
-        monitoring_step = 200
+        monitoring_step = 5000
         if (verbose):
             if ((loop + 1) % monitoring_step == 0):
                 print('  |_ loop num.: {}/{} | grad={:.6f} | J={:.6f}'.format(

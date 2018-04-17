@@ -13,9 +13,9 @@ import subprocess
 
 timbrespace_db = load.database()
 representations = [
-    # 'auditory_spectrum',
+    'auditory_spectrum',
     # 'fourier_spectrum',
-    'auditory_strf',
+    # 'auditory_strf',
     # 'fourier_strf',
     # 'auditory_spectrogram', 
     # 'fourier_spectrogram',
@@ -90,10 +90,11 @@ def run_optimization(optim_args={}):
 def run_all():
     optim_args = {
         'cost': 'correlation',
+        'loss': 'loglikelihood',
         'init_sig_mean': 1.0,
         'init_sig_var': 0.01,
         'num_loops': 100000,
-        'learning_rate': 0.05,
+        'learning_rate': 1.00,
         'log_foldername': './',
         'logging': True
     }
@@ -106,8 +107,9 @@ def grid_search_lr():
             print('***', learning_rate, n_test + 1)
             optim_args = {
                 'cost': 'correlation',
+                'loss': 'loglikelihood',
                 'init_sig_mean': 1.0,
-                'init_sig_var': 0.01,
+                'init_sig_var': 1.0,
                 'num_loops': 40000,
                 'learning_rate': learning_rate,
                 'log_foldername': './',
