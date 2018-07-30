@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import aifc
-
+import matplotlib.pylab as plt
 
 def raised_cosine(x, mu, s):
     return 1 / 2 / s * (1 + np.cos((x - mu) / s * math.pi)) * s
@@ -66,22 +66,7 @@ COCHBA = np.asarray([
           ])
 
 
-
-
 def get_dissimalrity_matrix(folder_path = '../ext/data/'):
-    # whole_raw = np.loadtxt(folder_path + 'whole.raw.txt')
-    # num_subjects = 9
-    # num_sounds = 16
-    # matDis  = np.zeros((num_sounds, num_sounds, num_subjects))
-    # for i in range(num_subjects):
-    #     temp = whole_raw[i * 8 : (i+1) * 8, :].T
-    #     temp = temp.reshape(1,8*15)
-    #     n = 0
-    #     for rowMat in range(16):
-    #        for columnMat in range(rowMat):
-    #            n = n + 1
-    #            matDis[rowMat, columnMat, i] = temp[0,n-1]
-    # return np.mean(matDis, axis=2).T
     return np.loadtxt(folder_path + '/dissimilarity_matrix.txt')
 
 
@@ -92,5 +77,8 @@ def audio_data(filename):
         wavtemp = aif.readframes(aif.getnframes())
         wavtemp = np.fromstring(wavtemp, np.short).byteswap() / 32767.0
         return wavtemp, fs_wav
-    # else:
-    #     raise ValueError('Not implemented yet')
+        
+
+if __name__=="__main__":
+    plt.plot(raised_cosine(np.arange(2205), 2205, 2205))
+    plt.show()

@@ -4,7 +4,7 @@ import os
 import time
 import pickle
 import matplotlib.pylab as plt
-# import pca
+from lib import pca
 from lib import load
 from lib import training
 import random
@@ -19,7 +19,7 @@ def compute_representations():
             'fourier_strf', 'auditory_spectrogram', 'fourier_spectrogram',
             'auditory_mps', 'fourier_mps'
         ],
-        'log_foldername': './outs/ts_crossval_eps=1e-36_norm',
+        'log_foldername': './outs/ts_crossval',
         'audio_args': {
             'resampling_fs': 16000,
             'duration': 0.25,
@@ -63,14 +63,14 @@ def compute_representations():
         normas = []
         for i, tsp in enumerate(args['timbre_spaces']):
             data = np.loadtxt(log_foldername+'/input_data/{}_{}_input_data.txt'.format(tsp, rs))
-            # normas.append(np.mean(np.max(np.abs(data), axis=0)))
-            # for i, tsp in enumerate(args['timbre_spaces']):
-            # data = np.loadtxt(log_foldername+'/input_data/{}_{}_input_data.txt'.format(tsp, rs))
-            # data = data / np.mean(normas)
+            normas.append(np.mean(np.max(np.abs(data), axis=0)))
+        for i, tsp in enumerate(args['timbre_spaces']):
+            data = np.loadtxt(log_foldername+'/input_data/{}_{}_input_data.txt'.format(tsp, rs))
+            data = data / np.mean(normas)
             # print('  save final data {} {:.5f}'.format(data.shape, np.mean(normas)))
-            # np.savetxt(log_foldername+'/input_data/{}_{}_input_data.txt'.format(tsp, rs), data)
-            data = data / np.mean(np.max(np.abs(data), axis=0))
             np.savetxt(log_foldername+'/input_data/{}_{}_input_data.txt'.format(tsp, rs), data)
+            # data = data / np.mean(np.max(np.abs(data), axis=0))
+            # np.savetxt(log_foldername+'/input_data/{}_{}_input_data.txt'.format(tsp, rs), data)
 
 
 
@@ -91,6 +91,7 @@ def run_crossts(rs, args):
 
     tsp  = args['timbre_spaces'][0]
     dissimil_mat_tsp = load.timbrespace_dismatrix(tsp, load.database())
+    print(log_foldername+'/../input_data/{}_{}_input_data.txt'.format(tsp, rs))
     tab_red = np.loadtxt(log_foldername+'/../input_data/{}_{}_input_data.txt'.format(tsp, rs))
 
     ndims = tab_red.shape[0]
@@ -199,7 +200,8 @@ def run_crossts(rs, args):
 
 
     def print_corr(xk):
-        corr_sum = 0
+        jns, jds = [], []
+        corr_sum = []
         for tsp in args['timbre_spaces']:
             dissimil_mat_tsp = load.timbrespace_dismatrix(tsp, load.database())
             tab_red = np.loadtxt(log_foldername+'/../input_data/{}_{}_input_data.txt'.format(tsp, rs))
@@ -223,12 +225,12 @@ def run_crossts(rs, args):
             std_kernel = np.std(kernel_v)
             Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
             Jd = no_samples * std_target * std_kernel
-            corr_sum += Jn/Jd / len(args['timbre_spaces'])
+            corr_sum.append(Jn/Jd)
         
         if not os.path.isfile(os.path.join(log_foldername, 'tmp.pkl')):
             loop_cpt = 1
-            pickle.dump({'loop': loop_cpt, 'correlation': [corr_sum]}, open(os.path.join(log_foldername, 'tmp.pkl'), 'wb'))
-            correlations = [corr_sum]
+            pickle.dump({'loop': loop_cpt, 'correlation': [np.mean(corr_sum)]}, open(os.path.join(log_foldername, 'tmp.pkl'), 'wb'))
+            correlations = [np.mean(corr_sum)]
             pickle.dump({
                     'sigmas': xk,
                     'kernel': kernel,
@@ -242,10 +244,11 @@ def run_crossts(rs, args):
             last_loop = pickle.load(open(os.path.join(log_foldername,'tmp.pkl'), 'rb'))
             loop_cpt = last_loop['loop'] + 1
             correlations = last_loop['correlation']
-            correlations.append(corr_sum)
-            monitoring_step = 5
+            correlations.append(np.mean(corr_sum))
+            monitoring_step = 50
             if (loop_cpt % monitoring_step == 0):
-                print('  |_ loop={} J={:.6f}'.format(loop_cpt, Jn/Jd))
+                corr_sum_str = ' '.join(['{:.2f}'.format(c) for c in corr_sum])
+                print('  |_ loop={} J={:.6f} ({})'.format(loop_cpt, np.mean(corr_sum), corr_sum_str))
                 pickle.dump({
                     'sigmas': xk,
                     'kernel': kernel,
@@ -278,11 +281,11 @@ def run_optim_tests():
     args = {
         'timbre_spaces': list(sorted(load.database().keys())),
         'audio_representations': [
-            # 'auditory_spectrum', 'fourier_spectrum', 'auditory_strf',
+            'auditory_spectrum', 'fourier_spectrum', 'auditory_strf',
             'fourier_strf', 'auditory_spectrogram', 'fourier_spectrogram',
             'auditory_mps', 'fourier_mps'
         ],
-        'log_foldername': './outs/ts_crossval_fixed',
+        'log_foldername': './outs/ts_crossval',
         'audio_args': {
             'resampling_fs': 16000,
             'duration': 0.25,
@@ -294,7 +297,7 @@ def run_optim_tests():
             'method': 'L-BFGS-B',
             'init_sig_mean': 1.0,
             'init_sig_var': 0.01,
-            'num_loops': 300,
+            'num_loops': 1000,
             'logging': True
         },
     }
@@ -403,7 +406,7 @@ def compute_correlations_from_within_ts_tests():
 
 if __name__ == '__main__':    
     # compute_representations()
-    # run_optim_tests()
-    compute_correlations_from_within_ts_tests()
+    run_optim_tests()
+    # compute_correlations_from_within_ts_tests()
     
     

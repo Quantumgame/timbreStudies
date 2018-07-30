@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pylab as plt
 import pickle
 import os
+from scipy.optimize import minimize
 
 
 def kernel_optim(input_data,
@@ -154,6 +155,502 @@ def kernel_optim(input_data,
 
     return correlations
 
+
+
+
+
+def kernel_optim_lbfgs(input_data,
+                       target_data,
+                       cost='correlation',
+                       loss='exp_sum',
+                       init_sig_mean=10.0,
+                       init_sig_var=0.5,
+                       num_loops=10000,
+                       method='L-BFGS-B',
+                       log_foldername='./',
+                       resume=None,
+                       logging=False,
+                       verbose=True):
+
+    if (verbose):
+        print("* training sigmas of gaussian kernels with cost '{}' and method '{}'".format(
+            cost, method))
+    
+    ndims, ninstrus = input_data.shape[0], input_data.shape[1]
+    no_samples = ninstrus * (ninstrus - 1) / 2
+    if resume != None:
+        init_seed = resume['init_seed']
+        sigmas = resume['sigmas']
+        gradients = resume['gradients']
+        correlations = resume['correlations']
+        retrieved_loop = resume['retrieved_loop']
+    else:
+        sigmas = np.abs(init_sig_mean + init_sig_var * np.random.randn(ndims, 1))
+        init_seed = sigmas
+        gradients = np.zeros((ndims, 1))
+        correlations = []  # = np.zeros((num_loops, ))
+        retrieved_loop = 0
+
+    ndims, ninstrus = input_data.shape[0], input_data.shape[1]
+    no_samples = ninstrus * (ninstrus - 1) / 2
+    idx_triu = np.triu_indices(target_data.shape[0], k=1)
+    target_v = target_data[idx_triu]
+    mean_target = np.mean(target_v)
+    std_target = np.std(target_v)
+
+    loop_cpt = 0
+    correlations = []
+
+    optim_options = {'disp': None, 'maxls': 50, 'iprint': -1, 'gtol': 1e-36, 'eps': 1e-16, 'maxiter': num_loops, 'ftol': 1e-36}
+    optim_bounds = [(1.0*f,1e5*f) for f in np.ones((ndims,))]
+
+    if logging:
+        pickle.dump({
+            'seed': init_seed,
+            'cost': cost,
+            'loss': loss,
+            'method': method,
+            'init_sig_mean': init_sig_mean,
+            'init_sig_var': init_sig_var,
+            'num_loops': num_loops,
+            'log_foldername': log_foldername,
+            'optim_options': {'options': optim_options, 'bounds': optim_bounds}
+        }, open(os.path.join(log_foldername, 'optim_config.pkl'), 'wb'))
+
+    def corr(x):
+        kernel = np.zeros((ninstrus, ninstrus))
+        for i in range(ninstrus):
+                for j in range(i + 1, ninstrus):
+                    kernel[i, j] = np.exp(-np.sum(
+                        np.power(
+                            np.divide(input_data[:, i] - input_data[:, j],
+                                      (x + np.finfo(float).eps)), 2)))
+        kernel_v = kernel[idx_triu]
+        mean_kernel = np.mean(kernel_v)
+        std_kernel = np.std(kernel_v)
+        Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+        Jd = (no_samples - 1) * std_target * std_kernel
+        return Jn/Jd
+
+
+    def grad_corr(x):
+        kernel = np.zeros((ninstrus, ninstrus))
+        dkernel = np.zeros((ninstrus, ninstrus, ndims))
+        for i in range(ninstrus):
+                for j in range(i + 1, ninstrus):
+                    kernel[i, j] = np.exp(-np.sum(
+                        np.power(
+                            np.divide(input_data[:, i] - input_data[:, j],
+                                      (x + np.finfo(float).eps)), 2)))
+                    dkernel[i, j, :] = 2 * kernel[i, j] * np.power(
+                        (input_data[:, i] - input_data[:, j]), 2) / (np.power(x, 3) + np.finfo(float).eps)
+        kernel_v = kernel[idx_triu]
+        mean_kernel = np.mean(kernel_v)
+        std_kernel = np.std(kernel_v)
+        Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+        Jd = (no_samples - 1) * std_target * std_kernel
+        for k in range(ndims):
+            dkernel_k_v = dkernel[:, :, k][idx_triu]
+            dJn = np.sum(dkernel_k_v * (target_v - mean_target))
+            dJd = (no_samples - 1) / no_samples * \
+                        std_target / (std_kernel + np.finfo(float).eps) * \
+                        np.sum(dkernel_k_v * (kernel_v - mean_kernel))
+            gradients[k] = (Jd * dJn - Jn * dJd) / (np.power(Jd,2) + np.finfo(float).eps)
+        return gradients
+
+
+    def print_corr(xk):
+        kernel = np.zeros((ninstrus, ninstrus))
+        for i in range(ninstrus):
+                for j in range(i + 1, ninstrus):
+                    kernel[i, j] = np.exp(-np.sum(
+                        np.power(
+                            np.divide(input_data[:, i] - input_data[:, j],
+                                      (xk + np.finfo(float).eps)), 2)))
+        kernel_v = kernel[idx_triu]
+        mean_kernel = np.mean(kernel_v)
+        std_kernel = np.std(kernel_v)
+        Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+        Jd = (no_samples - 1) * std_target * std_kernel
+        
+        if not os.path.isfile(os.path.join(log_foldername, 'tmp.pkl')):
+            loop_cpt = 1
+            pickle.dump({'loop': loop_cpt, 'correlation': [Jn/Jd]}, open(os.path.join(log_foldername, 'tmp.pkl'), 'wb'))
+            correlations = [Jn/Jd]
+            pickle.dump({
+                    'sigmas': xk,
+                    'kernel': kernel,
+                    'Jn': Jn,
+                    'Jd': Jd,
+                    'correlations': correlations,
+                }, open(os.path.join(log_foldername,
+                    'optim_process_l={}.pkl'.format(loop_cpt)), 'wb'))
+        else:
+            last_loop = pickle.load(open(os.path.join(log_foldername,'tmp.pkl'), 'rb'))
+            loop_cpt = last_loop['loop'] + 1
+            correlations = last_loop['correlation']
+            correlations.append(Jn/Jd)
+            monitoring_step = 25
+            if (loop_cpt % monitoring_step == 0):
+                print('  |_ loop={} J={:.6f}'.format(loop_cpt, Jn/Jd))
+                pickle.dump({
+                    'sigmas': xk,
+                    'kernel': kernel,
+                    'Jn': Jn,
+                    'Jd': Jd,
+                    'correlations': correlations,
+                }, open(os.path.join(log_foldername,
+                    'optim_process_l={}.pkl'.format(loop_cpt)), 'wb'))
+            pickle.dump({'loop': loop_cpt, 'correlation': correlations}, open(os.path.join(log_foldername, 'tmp.pkl'), 'wb'))
+
+    res = minimize(corr, sigmas, args=(), method=method, jac=grad_corr, callback=print_corr, options=optim_options, bounds=optim_bounds)
+
+    return correlations
+
+
+def kernel_optim_lbfgs_log(input_data,
+                       target_data,
+                       cost='correlation',
+                       loss='exp_sum',
+                       init_sig_mean=10.0,
+                       init_sig_var=0.5,
+                       num_loops=10000,
+                       method='L-BFGS-B',
+                       log_foldername='./',
+                       resume=None,
+                       logging=False,
+                       verbose=True):
+    
+    if (verbose):
+        print("* training sigmas of gaussian kernels with cost '{}' and method '{}'".format(
+            cost, method))
+    
+    ndims, ninstrus = input_data.shape[0], input_data.shape[1]
+    no_samples = ninstrus * (ninstrus - 1) / 2
+    if resume != None:
+        init_seed = resume['init_seed']
+        sigmas = resume['sigmas']
+        gradients = resume['gradients']
+        correlations = resume['correlations']
+        retrieved_loop = resume['retrieved_loop']
+    else:
+        sigmas = np.abs(init_sig_mean + init_sig_var * np.random.randn(ndims, 1))
+        init_seed = sigmas
+        gradients = np.zeros((ndims, 1))
+        correlations = []  # = np.zeros((num_loops, ))
+        retrieved_loop = 0
+
+    ndims, ninstrus = input_data.shape[0], input_data.shape[1]
+    no_samples = ninstrus * (ninstrus - 1) / 2
+    idx_triu = np.triu_indices(target_data.shape[0], k=1)
+    target_v = target_data[idx_triu]
+    mean_target = np.mean(target_v)
+    std_target = np.std(target_v)
+
+    loop_cpt = 0
+    correlations = []
+
+    optim_options = {'disp': None, 'maxls': 50, 'iprint': -1, 'gtol': 1e-36, 'eps': 1e-8, 'maxiter': num_loops, 'ftol': 1e-36}
+    optim_bounds = [(1.0*f,1e5*f) for f in np.ones((ndims,))]
+
+    if logging:
+        pickle.dump({
+            'seed': init_seed,
+            'cost': cost,
+            'loss': loss,
+            'method': method,
+            'init_sig_mean': init_sig_mean,
+            'init_sig_var': init_sig_var,
+            'num_loops': num_loops,
+            'log_foldername': log_foldername,
+            'optim_options': {'options': optim_options, 'bounds': optim_bounds}
+        }, open(os.path.join(log_foldername, 'optim_config.pkl'), 'wb'))
+
+    def corr(x):
+        kernel = np.zeros((ninstrus, ninstrus))
+        for i in range(ninstrus):
+                for j in range(i + 1, ninstrus):
+                    kernel[i, j] = -np.sum(
+                        np.power(
+                            np.divide(input_data[:, i] - input_data[:, j],
+                                      (x + np.finfo(float).eps)), 2))
+        kernel_v = kernel[idx_triu]
+        mean_kernel = np.mean(kernel_v)
+        std_kernel = np.std(kernel_v)
+        Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+        # Jd = (no_samples - 1) * std_target * std_kernel
+        Jd = no_samples * std_target * std_kernel
+        return Jn/Jd
+
+
+    def grad_corr(x):
+        kernel = np.zeros((ninstrus, ninstrus))
+        dkernel = np.zeros((ninstrus, ninstrus, ndims))
+        for i in range(ninstrus):
+                for j in range(i + 1, ninstrus):
+                    kernel[i, j] = -np.sum(
+                        np.power(
+                            np.divide(input_data[:, i] - input_data[:, j],
+                                      (x + np.finfo(float).eps)), 2))
+                    dkernel[i, j, :] = 2 * np.power((input_data[:, i] - input_data[:, j]), 2) / (np.power(x, 3) + np.finfo(float).eps)
+        kernel_v = kernel[idx_triu]
+        mean_kernel = np.mean(kernel_v)
+        std_kernel = np.std(kernel_v)
+        Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+        # Jd = (no_samples - 1) * std_target * std_kernel
+        Jd = no_samples * std_target * std_kernel
+        for k in range(ndims):
+            dkernel_k_v = dkernel[:, :, k][idx_triu]
+            dJn = np.sum(dkernel_k_v * (target_v - mean_target))
+            # dJd = (no_samples - 1) / no_samples * \
+            #             std_target / (std_kernel + np.finfo(float).eps) * \
+            #             np.sum(dkernel_k_v * (kernel_v - mean_kernel))
+            dJd = no_samples / no_samples * \
+                        std_target / (std_kernel + np.finfo(float).eps) * \
+                        np.sum(dkernel_k_v * (kernel_v - mean_kernel))
+            gradients[k] = (Jd * dJn - Jn * dJd) / (np.power(Jd,2) + np.finfo(float).eps)
+        return gradients
+
+
+    def print_corr(xk):
+        kernel = np.zeros((ninstrus, ninstrus))
+        for i in range(ninstrus):
+                for j in range(i + 1, ninstrus):
+                    kernel[i, j] = np.exp(-np.sum(
+                        np.power(
+                            np.divide(input_data[:, i] - input_data[:, j],
+                                      (xk + np.finfo(float).eps)), 2)))
+        kernel_v = kernel[idx_triu]
+        mean_kernel = np.mean(kernel_v)
+        std_kernel = np.std(kernel_v)
+        Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+        # Jd = (no_samples - 1) * std_target * std_kernel
+        Jd = no_samples * std_target * std_kernel
+        
+        if not os.path.isfile(os.path.join(log_foldername, 'tmp.pkl')):
+            loop_cpt = 1
+            pickle.dump({'loop': loop_cpt, 'correlation': [Jn/Jd]}, open(os.path.join(log_foldername, 'tmp.pkl'), 'wb'))
+            correlations = [Jn/Jd]
+            pickle.dump({
+                    'sigmas': xk,
+                    'kernel': kernel,
+                    'Jn': Jn,
+                    'Jd': Jd,
+                    'correlations': correlations,
+                }, open(os.path.join(log_foldername,
+                    'optim_process_l={}.pkl'.format(loop_cpt)), 'wb'))
+        else:
+            last_loop = pickle.load(open(os.path.join(log_foldername,'tmp.pkl'), 'rb'))
+            loop_cpt = last_loop['loop'] + 1
+            correlations = last_loop['correlation']
+            correlations.append(Jn/Jd)
+            monitoring_step = 100
+            if (loop_cpt % monitoring_step == 0):
+                print('  |_ loop={} J={:.6f}'.format(loop_cpt, Jn/Jd))
+                pickle.dump({
+                    'sigmas': xk,
+                    'kernel': kernel,
+                    'Jn': Jn,
+                    'Jd': Jd,
+                    'correlations': correlations,
+                }, open(os.path.join(log_foldername,
+                    'optim_process_l={}.pkl'.format(loop_cpt)), 'wb'))
+            pickle.dump({'loop': loop_cpt, 'correlation': correlations, 'sigmas': xk}, open(os.path.join(log_foldername, 'tmp.pkl'), 'wb'))
+
+    res = minimize(corr, sigmas, args=(), method=method, jac=grad_corr, callback=print_corr, options=optim_options, bounds=optim_bounds)
+    last_loop = pickle.load(open(os.path.join(log_foldername,'tmp.pkl'), 'rb'))
+    sigmas_ = last_loop['sigmas']
+    return correlations, sigmas_
+
+def kernel_optim_lbfgs_log_crossts(input_data,
+                                   target_data,
+                                   cost='correlation',
+                                   loss='exp_sum',
+                                   init_sig_mean=10.0,
+                                   init_sig_var=0.5,
+                                   num_loops=10000,
+                                   method='L-BFGS-B',
+                                   log_foldername='./',
+                                   logging=False,
+                                   verbose=True):
+    
+    if (verbose):
+        print("* training sigmas of gaussian kernels with cost '{}' and method '{}'".format(
+            cost, method))
+
+    tsps = list(sorted(input_data.keys()))
+    ndims = input_data[tsps[0]].shape[0]  # dim of audio repres
+    nsnds_tsp = [0]
+    nsnds_tsp.extend([input_data[k].shape[1] for k in tsps])
+    ninstrus = np.sum([input_data[k].shape[1] for k in tsps])   # total num of sounds
+    # no_samples = ninstrus * (ninstrus - 1) / 2
+
+    sigmas = np.abs(init_sig_mean + init_sig_var * np.random.randn(ndims, 1))
+    init_seed = sigmas
+    gradients = np.zeros((ndims, 1))
+    correlations = []  # = np.zeros((num_loops, ))
+    retrieved_loop = 0
+
+    # target_data_all = np.zeros((ninstrus, ninstrus))
+    # for ti, tsp in enumerate(tsps):
+    #     offset = np.cumsum(nsnds_tsp[:ti+1])[-1]
+    #     ninstrus_tsp = nsnds_tsp[ti+1]
+    #     target_data_all[offset:offset+ninstrus_tsp,offset:offset+ninstrus_tsp] = target_data[tsp]
+    # idx_triu = np.triu_indices(target_data_all.shape[0], k=1)
+    # target_v = target_data_all[idx_triu]
+    # mean_target = np.mean(target_v)
+    # std_target = np.std(target_v)
+
+    loop_cpt = 0
+    correlations = []
+
+    optim_options = {'disp': None, 'maxls': 50, 'iprint': -1, 'gtol': 1e-36, 'eps': 1e-36, 'maxiter': num_loops, 'ftol': 1e-36}
+    optim_bounds = [(1.0*f,1e5*f) for f in np.ones((ndims,))]
+
+    if logging:
+        pickle.dump({
+            'seed': init_seed,
+            'cost': cost,
+            'loss': loss,
+            'method': method,
+            'init_sig_mean': init_sig_mean,
+            'init_sig_var': init_sig_var,
+            'num_loops': num_loops,
+            'log_foldername': log_foldername,
+            'optim_options': {'options': optim_options, 'bounds': optim_bounds}
+        }, open(os.path.join(log_foldername, 'optim_config.pkl'), 'wb'))
+
+    def corr(x):
+        corr_sum = 0
+        for ti, tsp in enumerate(tsps):
+            # offset = np.cumsum(nsnds_tsp[:ti+1])[-1]
+            ninstrus_tsp = nsnds_tsp[ti+1]
+            no_samples = ninstrus_tsp * (ninstrus_tsp - 1) / 2
+            kernel = np.zeros((ninstrus_tsp, ninstrus_tsp))
+            for i in range(ninstrus_tsp):
+                for j in range(i + 1, ninstrus_tsp):
+                    kernel[i, j] = -np.sum(
+                        np.power(
+                            np.divide(input_data[tsp][:, i] - input_data[tsp][:, j],
+                                      (x + np.finfo(float).eps)), 2))
+            idx_triu = np.triu_indices(target_data[tsp].shape[0], k=1)
+            target_v = target_data[tsp][idx_triu]
+            mean_target = np.mean(target_v)
+            std_target = np.std(target_v)
+            kernel_v = kernel[idx_triu]
+            mean_kernel = np.mean(kernel_v)
+            std_kernel = np.std(kernel_v)
+            Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+            Jd = no_samples * std_target * std_kernel
+            corr_sum += Jn/Jd
+        # print(corr_sum/len(tsps))
+        return corr_sum #Jn/Jd
+
+    def grad_corr(x):
+        corr_sum = 0.0
+        kernel_v = {}
+        dkernel = {}
+        target_v = {}
+        for ti, tsp in enumerate(tsps):
+            ninstrus_tsp = nsnds_tsp[ti+1]
+            no_samples = ninstrus_tsp * (ninstrus_tsp - 1) / 2
+            kernel = np.zeros((ninstrus_tsp, ninstrus_tsp))
+            dkernel[tsp] = np.zeros((ninstrus_tsp, ninstrus_tsp, ndims))
+            # offset = np.cumsum(nsnds_tsp[:ti+1])[-1]
+            for i in range(ninstrus_tsp):
+                for j in range(i + 1, ninstrus_tsp):
+                    kernel[i, j] = -np.sum(
+                        np.power(
+                            np.divide(input_data[tsp][:, i] - input_data[tsp][:, j],
+                                      (x + np.finfo(float).eps)), 2))
+                    dkernel[tsp][i, j, :] = 2 * np.power((input_data[tsp][:, i] - input_data[tsp][:, j]), 2) / (np.power(x, 3) + np.finfo(float).eps)
+            idx_triu = np.triu_indices(target_data[tsp].shape[0], k=1)
+            target_v[tsp] = target_data[tsp][idx_triu]
+            mean_target = np.mean(target_v[tsp])
+            std_target = np.std(target_v[tsp])
+            kernel_v[tsp] = kernel[idx_triu]
+            mean_kernel = np.mean(kernel_v[tsp])
+            std_kernel = np.std(kernel_v[tsp])
+            Jn = np.sum(np.multiply(kernel_v[tsp] - mean_kernel, target_v[tsp] - mean_target))
+            Jd = no_samples * std_target * std_kernel
+            corr_sum += Jn/Jd
+        for k in range(ndims):
+            for ti, tsp in enumerate(tsps):
+                idx_triu = np.triu_indices(target_data[tsp].shape[0], k=1)
+                dkernel_k_v = dkernel[tsp][:, :, k][idx_triu]
+                # print(tsp, dkernel_k_v.shape, target_v[tsp].shape, np.mean(target_v[tsp]))
+                dJn = np.sum(dkernel_k_v * (target_v[tsp] - np.mean(target_v[tsp])))
+                dJd = no_samples / no_samples * \
+                            np.std(target_v[tsp]) / (np.std(kernel_v[tsp]) + np.finfo(float).eps) * \
+                            np.sum(dkernel_k_v * (kernel_v[tsp] - np.mean(kernel_v[tsp])))
+                gradients[k] += (Jd * dJn - Jn * dJd) / (np.power(Jd,2) + np.finfo(float).eps)
+        return gradients
+
+
+    def print_corr(xk):
+        # kernel = np.zeros((ninstrus, ninstrus))
+        # for i in range(ninstrus):
+        #         for j in range(i + 1, ninstrus):
+        #             kernel[i, j] = np.exp(-np.sum(
+        #                 np.power(
+        #                     np.divide(input_data[:, i] - input_data[:, j],
+        #                               (xk + np.finfo(float).eps)), 2)))
+        corr_sum = 0
+        for ti, tsp in enumerate(tsps):
+            # offset = np.cumsum(nsnds_tsp[:ti+1])[-1]
+            ninstrus_tsp = nsnds_tsp[ti+1]
+            no_samples = ninstrus_tsp * (ninstrus_tsp - 1) / 2
+            kernel = np.zeros((ninstrus_tsp, ninstrus_tsp))
+            for i in range(ninstrus_tsp):
+                for j in range(i + 1, ninstrus_tsp):
+                    kernel[i, j] = np.exp(-np.sum(
+                        np.power(
+                            np.divide(input_data[tsp][:, i] - input_data[tsp][:, j],
+                                      (xk + np.finfo(float).eps)), 2)))
+            idx_triu = np.triu_indices(target_data[tsp].shape[0], k=1)
+            target_v = target_data[tsp][idx_triu]
+            mean_target = np.mean(target_v)
+            std_target = np.std(target_v)
+            kernel_v = kernel[idx_triu]
+            mean_kernel = np.mean(kernel_v)
+            std_kernel = np.std(kernel_v)
+            Jn = np.sum(np.multiply(kernel_v - mean_kernel, target_v - mean_target))
+            Jd = no_samples * std_target * std_kernel
+            corr_sum += (Jn/Jd) / len(tsps)
+        if not os.path.isfile(os.path.join(log_foldername, 'tmp.pkl')):
+            loop_cpt = 1
+            pickle.dump({'loop': loop_cpt, 'correlation': [Jn/Jd]}, open(os.path.join(log_foldername, 'tmp.pkl'), 'wb'))
+            correlations = [Jn/Jd]
+            pickle.dump({
+                    'sigmas': xk,
+                    'kernel': kernel,
+                    'Jn': Jn,
+                    'Jd': Jd,
+                    'correlations': correlations,
+                }, open(os.path.join(log_foldername,
+                    'optim_process_l={}.pkl'.format(loop_cpt)), 'wb'))
+        else:
+            last_loop = pickle.load(open(os.path.join(log_foldername,'tmp.pkl'), 'rb'))
+            loop_cpt = last_loop['loop'] + 1
+            correlations = last_loop['correlation']
+            correlations.append(Jn/Jd)
+            monitoring_step = 5
+            if (loop_cpt % monitoring_step == 0):
+                print('  |_ loop={} J={:.6f}'.format(loop_cpt, Jn/Jd))
+                pickle.dump({
+                    'sigmas': xk,
+                    'kernel': kernel,
+                    'Jn': Jn,
+                    'Jd': Jd,
+                    'correlations': correlations,
+                }, open(os.path.join(log_foldername,
+                    'optim_process_l={}.pkl'.format(loop_cpt)), 'wb'))
+            pickle.dump({'loop': loop_cpt, 'correlation': correlations, 'sigmas': xk}, open(os.path.join(log_foldername, 'tmp.pkl'), 'wb'))
+
+    res = minimize(corr, sigmas, args=(), method=method, jac=grad_corr, callback=print_corr, options=optim_options, bounds=optim_bounds)
+    last_loop = pickle.load(open(os.path.join(log_foldername,'tmp.pkl'), 'rb'))
+    sigmas_ = last_loop['sigmas']
+    return correlations, sigmas_
 
 
 def kernel_optim_log(input_data,

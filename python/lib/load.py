@@ -7,6 +7,7 @@ import numpy as np
 from lib import utils
 from lib import auditory
 from lib import fourier
+import subprocess
 
 
 def database(root_path='../ext/'):
@@ -34,15 +35,14 @@ def get_representation_func(representation):
 
 def timbrespace_features(timbrespace='Iverson93Whole',
                          representations=['auditory_strf'],
-                         window=None,
-                         timbrespace_db=None,
-                         verbose=False):
+                         audio_args={},
+                         verbose = True):
     if (verbose):
         print('* get {} for {}'.format(representations,timbrespace))
 
     # if the database with the timbrespaces' names is not loaded yet, load it
-    if (timbrespace_db == None):
-        timbrespace_db = database()
+    # if (timbrespace_db == None):
+    timbrespace_db = database()
 
     # check if the timbrespace name is actually in the db
     valid_timbrespace_name = timbrespace in timbrespace_db.keys()
@@ -72,40 +72,13 @@ def timbrespace_features(timbrespace='Iverson93Whole',
                     audio_lengths.append(len(audio))
     min_aud_len = np.min(audio_lengths)
     for rs in representations:
-        for fn in filename_dict[rs]:
-            if (verbose):
-                print('  |_ {}'.format(fn))
+        for fn in sorted(filename_dict[rs]):
+            # if (verbose):
+            #     print('  |_ {}'.format(fn))
             audio, fs = utils.audio_data(fn)
             audio = audio[:min_aud_len]
-            # strf_params.update({'fs': fs})
-            # compute each space in the list 'representations'
-            repres = get_representation_func(rs)(audio, fs)
-            # print(len(audio), fs, repres.shape)
+            repres = get_representation_func(rs)(audio, fs, **audio_args)
             timbrespace_features[rs].append(repres)
-
-            # auditory.strf(audio, fs))
-        # if (rs == 'strf'):
-        #     if window == None:
-        #         timbrespace_features[rs].append(
-        #             auditory.strf(audio, fs))
-        #         # print(timbrespace_features[rs][-1].shape)
-        #     else:
-        #         # windowing parameters
-        #         win_length_n = int(window['win_length'] * fs)
-        #         hop_length_n = int(window['hop_length'] * fs)
-        #         num_frames = max(
-        #             int((
-        #                 len(audio) - win_length_n) / hop_length_n),
-        #             1)
-        #         windowed_features = []
-        #         for wn in range(num_frames):
-        #             start_n = wn * hop_length_n
-        #             end_n = start_n + win_length_n
-        #             if (rs == 'strf'):
-        #                 windowed_features.append(
-        #                     features.strf(audio[start_n:end_n],
-        #                                   fs))
-        #         timbrespace_features[rs].append(windowed_features)
 
     if (verbose):
         print('  |_ num. of sounds: {}'.format(
@@ -201,6 +174,33 @@ def load_dismatrices(root_path='../dataSoundsDissim/'):
     print(len(dismatrices), dismatrices[0]['name'], dismatrices[0]['matrix'])
 
 
+def delete_outpkls(path='/Volumes/LaCie/outputs'):
+    timbrespace_db = [
+        'grey1977',
+        'grey1978',
+        'iverson1993onset',
+        'iverson1993whole',
+        'lakatoscomb',
+        'lakatosharm',
+        'lakatosperc',
+        'mcadams1995',
+        'patil2012_a3',
+        'patil2012_dx4',
+        'patil2012_gd4'
+    ]
+    for i, tsp in enumerate(sorted(timbrespace_db)):
+        folder = os.path.join(path,tsp.lower())
+        for root, dirs, files in os.walk(folder):
+            for f in files:
+                # print(root)
+                if f.split('=')[0] == 'optim_process_l':
+                    if int(f.split('=')[1].split('.')[0])%20==0:
+                        print('keep', f, root)
+                    else:
+                        print('delete', os.path.join(root,f))
+                        subprocess.call(['rm', '-r', os.path.join(root,f)])
+
 if __name__ == "__main__":
-    load_dismatrices()
+    # load_dismatrices()
     # print(load_timbrespace_names())
+    delete_outpkls(path='/Volumes/LaCie/outputs')
