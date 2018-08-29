@@ -4,7 +4,7 @@ import os
 import time
 import pickle
 import matplotlib.pylab as plt
-import pca
+from lib import pca
 from lib import load
 from lib import training
 import random
@@ -157,14 +157,17 @@ def run_optimization(args={}):
                 run_one_tsp_rs_crossval(tsp, rs, args)
 
 
-def run():
-    args = {
-        'timbre_spaces': list(sorted(load.database().keys())),
-        'audio_representations': [
+def run(tsp=None, rs=None):
+    valid_tsps = list(sorted(load.database().keys())) if tsp == None else tsp
+    valid_rs = [
             'auditory_spectrum', 'fourier_spectrum', 'auditory_strf',
             'fourier_strf', 'auditory_spectrogram', 'fourier_spectrogram',
             'auditory_mps', 'fourier_mps'
-        ],
+        ] if rs == None else rs
+    
+    args = {
+        'timbre_spaces': valid_tsps,
+        'audio_representations': valid_rs,
         'log_foldername': './outs/',
         'test_args': {
             'snd_crossval': False
@@ -187,6 +190,8 @@ def run():
     start_time = time.time()
     run_optimization(args)
     print(time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+
 
 
 # def run_test_durations():
@@ -292,4 +297,7 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    # run on all TSPs and RS: uncomment line below
+    # run()
+    # run on a single TSP and a single RS:
+    run(tsp=['Grey1977'], rs=['auditory_spectrum']) 
